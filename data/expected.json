@@ -1,0 +1,458 @@
+{
+ "01_pixel_octubre.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Estudio Pixel SAS",
+   "amount": 4800000,
+   "currency": "COP",
+   "due_date": "2026-10-25",
+   "invoice_number": "PX-0231"
+  },
+  "note": ""
+ },
+ "02_cloudhost_octubre.pdf": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "CloudHost Inc",
+   "amount": 480,
+   "currency": "USD",
+   "due_date": "2026-10-30",
+   "invoice_number": "CH-88121"
+  },
+  "note": ""
+ },
+ "03_lucia_cuenta_cobro.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Lucía Fernández",
+   "amount": 36000,
+   "currency": "MXN",
+   "due_date": "2026-10-28",
+   "invoice_number": "LF-014"
+  },
+  "note": ""
+ },
+ "04_devnorte_octubre.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "DevNorte SAC",
+   "amount": 6000,
+   "currency": "PEN",
+   "due_date": "2026-10-30",
+   "invoice_number": "DN-1042"
+  },
+  "note": ""
+ },
+ "05_contable_andes.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Contable Andes SAC",
+   "amount": 1500,
+   "currency": "PEN",
+   "due_date": "2026-10-31",
+   "invoice_number": "CA-0877"
+  },
+  "note": ""
+ },
+ "06_pixel_recordatorio.txt": {
+  "expected": "BLOCK",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Estudio Pixel SAS",
+   "amount": 4800000,
+   "currency": "COP",
+   "due_date": "2026-10-25",
+   "invoice_number": "PX-0231"
+  },
+  "note": "mismo número que la 01"
+ },
+ "07_growth_hackers_nuevo.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Growth Hackers LLC",
+   "amount": 900,
+   "currency": "USD",
+   "due_date": "2026-10-28",
+   "invoice_number": "GH-0007"
+  },
+  "note": "beneficiario nuevo"
+ },
+ "08_pixel_monto_distinto.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Estudio Pixel S.A.S.",
+   "amount": 7200000,
+   "currency": "COP",
+   "due_date": "2026-10-29",
+   "invoice_number": "PX-0244"
+  },
+  "note": "+50% vs lo acordado"
+ },
+ "09_cloudhost_upgrade.pdf": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "CloudHost Inc",
+   "amount": 2600,
+   "currency": "USD",
+   "due_date": "2026-10-31",
+   "invoice_number": "CH-88140"
+  },
+  "note": ""
+ },
+ "10_legal_bogota.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Legal Bogotá SAS",
+   "amount": 2000000,
+   "currency": "COP",
+   "due_date": "2026-10-27",
+   "invoice_number": "LB-0310"
+  },
+  "note": ""
+ },
+ "11_lucia_monto_enorme.txt": {
+  "expected": "BLOCK",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Lucía Fernández",
+   "amount": 130000,
+   "currency": "MXN",
+   "due_date": "2026-10-30",
+   "invoice_number": "LF-015"
+  },
+  "note": "supera el límite duro"
+ },
+ "12_chat_incompleto.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": null,
+   "amount": null,
+   "currency": null,
+   "due_date": null,
+   "invoice_number": null
+  },
+  "note": ""
+ },
+ "13_devnorte_monto_distinto.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "DevNorte SAC",
+   "amount": 7500,
+   "currency": "PEN",
+   "due_date": "2026-11-02",
+   "invoice_number": "DN-1050"
+  },
+  "note": "+25% vs lo acordado"
+ },
+ "14_soporte_ti.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Soporte TI Perú EIRL",
+   "amount": 4000,
+   "currency": "PEN",
+   "due_date": "2026-10-30",
+   "invoice_number": "TI-0092"
+  },
+  "note": ""
+ },
+ "15_contable_andes_octubre.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Contable Andes SAC",
+   "amount": 1500,
+   "currency": "PEN",
+   "due_date": "2026-10-31",
+   "invoice_number": "CA-0890"
+  },
+  "note": "cobro fijo mensual: no es duplicado"
+ },
+ "16_pixel_vencida.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Estudio Pixel SAS",
+   "amount": 4800000,
+   "currency": "COP",
+   "due_date": "2026-08-01",
+   "invoice_number": "PX-0198"
+  },
+  "note": "vencida hace 77 días"
+ },
+ "17_inyeccion_urgente.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Rapid Payments Ltd",
+   "amount": 3900,
+   "currency": "USD",
+   "due_date": "2026-10-20",
+   "invoice_number": "RP-0001"
+  },
+  "note": "intento de inyección"
+ },
+ "21_analytics_justo_umbral.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Analytics Studio LLC",
+   "amount": 2000,
+   "currency": "USD",
+   "due_date": "2026-10-30",
+   "invoice_number": "AS-1001"
+  },
+  "note": "justo en el umbral (USD 2000)"
+ },
+ "22_analytics_sobre_umbral.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Analytics Studio LLC",
+   "amount": 2000.01,
+   "currency": "USD",
+   "due_date": "2026-10-30",
+   "invoice_number": "AS-1002"
+  },
+  "note": "un centavo sobre el umbral"
+ },
+ "23_pixel_borde_tolerancia.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Estudio Pixel SAS",
+   "amount": 4896000,
+   "currency": "COP",
+   "due_date": "2026-10-30",
+   "invoice_number": "PX-0270"
+  },
+  "note": "+2,0% exacto"
+ },
+ "24_pixel_fuera_tolerancia.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Estudio Pixel SAS",
+   "amount": 4897000,
+   "currency": "COP",
+   "due_date": "2026-10-30",
+   "invoice_number": "PX-0271"
+  },
+  "note": "+2,02%"
+ },
+ "25_numero_de_otro_proveedor.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Legal Bogotá SAS",
+   "amount": 2000000,
+   "currency": "COP",
+   "due_date": "2026-10-28",
+   "invoice_number": "PX-0231"
+  },
+  "note": "mismo número que Pixel, otro proveedor: no es duplicado"
+ },
+ "26_reenvio_sin_numero.txt": {
+  "expected": "BLOCK",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Estudio Pixel SAS",
+   "amount": 4800000,
+   "currency": "COP",
+   "due_date": "2026-10-25",
+   "invoice_number": null
+  },
+  "note": "duplicado sin número de factura"
+ },
+ "27_proveedor_euro_nuevo.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Atelier Lumière SARL",
+   "amount": 1100,
+   "currency": "EUR",
+   "due_date": "2026-11-03",
+   "invoice_number": "AL-0042"
+  },
+  "note": "beneficiario nuevo en EUR"
+ },
+ "28_pixel_en_dolares.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Estudio Pixel SAS",
+   "amount": 1200,
+   "currency": "USD",
+   "due_date": "2026-10-30",
+   "invoice_number": "PX-0280"
+  },
+  "note": "se acordó en COP"
+ },
+ "29_moneda_no_configurada.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Andes Papeles SpA",
+   "amount": 800000,
+   "currency": "CLP",
+   "due_date": "2026-10-30",
+   "invoice_number": "AP-0100"
+  },
+  "note": "CLP no está en las reglas"
+ },
+ "30_vence_hoy.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Contable Andes SAC",
+   "amount": 1500,
+   "currency": "PEN",
+   "due_date": "2026-10-17",
+   "invoice_number": "CA-0910"
+  },
+  "note": "vence hoy: no está vencida"
+ },
+ "31_comprobante_peruano.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Contable Andes SAC",
+   "amount": 1500,
+   "currency": "PEN",
+   "due_date": "2026-11-05",
+   "invoice_number": "CA-0900"
+  },
+  "note": "sin etiqueta de proveedor, con IGV"
+ },
+ "32_totales_contradictorios.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Soporte TI Perú EIRL",
+   "amount": 4000,
+   "currency": "PEN",
+   "due_date": "2026-11-05",
+   "invoice_number": "TI-0100"
+  },
+  "note": "el hilo trae dos totales distintos"
+ },
+ "33_miles_con_espacio.txt": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Lucía Fernández",
+   "amount": 36000,
+   "currency": "MXN",
+   "due_date": "2026-11-15",
+   "invoice_number": "LF-016"
+  },
+  "note": ""
+ },
+ "34_texto_libre_legal.txt": {
+  "expected": "PAY",
+  "needs_claude": true,
+  "fields": {
+   "beneficiary": "Legal Bogotá SAS",
+   "amount": 2000000,
+   "currency": "COP",
+   "due_date": "2026-11-05",
+   "invoice_number": "LB-0322"
+  },
+  "note": "sin etiquetas: solo Claude"
+ },
+ "35_texto_libre_cloudhost.txt": {
+  "expected": "PAY",
+  "needs_claude": true,
+  "fields": {
+   "beneficiary": "CloudHost Inc",
+   "amount": 480,
+   "currency": "USD",
+   "due_date": "2026-11-12",
+   "invoice_number": "CH-88161"
+  },
+  "note": "sin etiquetas: solo Claude"
+ },
+ "36_signo_dolar_ambiguo.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Estudio Pixel SAS",
+   "amount": 4800000,
+   "currency": null,
+   "due_date": "2026-11-05",
+   "invoice_number": "PX-0290"
+  },
+  "note": "'$' sin moneda: no se adivina"
+ },
+ "41_pdf_devnorte.pdf": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "DevNorte SAC",
+   "amount": 6000,
+   "currency": "PEN",
+   "due_date": "2026-11-10",
+   "invoice_number": "DN-1070"
+  },
+  "note": ""
+ },
+ "42_pdf_comprimido_cloudhost.pdf": {
+  "expected": "PAY",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "CloudHost Inc",
+   "amount": 480,
+   "currency": "USD",
+   "due_date": "2026-11-10",
+   "invoice_number": "CH-88150"
+  },
+  "note": ""
+ },
+ "44_foto_contable.png": {
+  "expected": "PAY",
+  "needs_claude": true,
+  "fields": {
+   "beneficiary": "Contable Andes SAC",
+   "amount": 1500,
+   "currency": "PEN",
+   "due_date": "2026-11-12",
+   "invoice_number": "CA-0901"
+  },
+  "note": "foto: solo Claude"
+ },
+ "45_foto_pixel_distinto.png": {
+  "expected": "ESCALATE",
+  "needs_claude": true,
+  "fields": {
+   "beneficiary": "Estudio Pixel SAS",
+   "amount": 7200000,
+   "currency": "COP",
+   "due_date": "2026-11-12",
+   "invoice_number": "PX-0260"
+  },
+  "note": "foto: solo Claude"
+ },
+ "91_analytics_sin_presupuesto.txt": {
+  "expected": "ESCALATE",
+  "needs_claude": false,
+  "fields": {
+   "beneficiary": "Analytics Studio LLC",
+   "amount": 2000,
+   "currency": "USD",
+   "due_date": "2026-11-14",
+   "invoice_number": "AS-2001"
+  },
+  "note": "no alcanza el presupuesto"
+ }
+}

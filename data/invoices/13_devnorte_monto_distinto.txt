@@ -1,0 +1,11 @@
+De: cobros@devnortesac.example
+Para: finanzas@nortelabs.example
+Asunto: Factura DN-1050 - Desarrollo + soporte nocturno
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: DevNorte SAC
+Concepto: Desarrollo + soporte nocturno
+Factura: DN-1050
+Total a pagar: PEN 7,500.00
+Vence: 02/11/2026

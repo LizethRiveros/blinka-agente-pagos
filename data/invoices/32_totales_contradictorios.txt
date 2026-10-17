@@ -1,0 +1,11 @@
+Hola, corrijo el monto de mi factura anterior.
+
+Proveedor: Soporte TI Perú EIRL
+Factura: TI-0100
+Total a pagar: PEN 4,000.00
+Vence: 05/11/2026
+
+-----Mensaje original-----
+Proveedor: Soporte TI Perú EIRL
+Factura: TI-0100
+Total a pagar: PEN 4,500.00

@@ -1,0 +1,11 @@
+De: cobros@atelierlumièresarl.example
+Para: finanzas@nortelabs.example
+Asunto: Factura AL-0042 - Diseño gráfico
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Atelier Lumière SARL
+Concepto: Diseño gráfico
+Factura: AL-0042
+Total a pagar: EUR 1,100.00
+Vence: 03/11/2026

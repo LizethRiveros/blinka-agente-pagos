@@ -1,0 +1,11 @@
+De: cobros@legalbogotásas.example
+Para: finanzas@nortelabs.example
+Asunto: Factura PX-0231 - Asesoría contractual
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Legal Bogotá SAS
+Concepto: Asesoría contractual
+Factura: PX-0231
+Total a pagar: COP 2.000.000
+Vence: 28/10/2026

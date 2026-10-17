@@ -1,0 +1,11 @@
+De: cobros@soportetiperúeirl.example
+Para: finanzas@nortelabs.example
+Asunto: Factura TI-0092 - Soporte mensual
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Soporte TI Perú EIRL
+Concepto: Soporte mensual
+Factura: TI-0092
+Total a pagar: PEN 4,000.00
+Vence: 30/10/2026

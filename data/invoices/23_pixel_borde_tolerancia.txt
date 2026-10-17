@@ -1,0 +1,11 @@
+De: cobros@estudiopixelsas.example
+Para: finanzas@nortelabs.example
+Asunto: Factura PX-0270 - Retainer + ajuste
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Estudio Pixel SAS
+Concepto: Retainer + ajuste
+Factura: PX-0270
+Total a pagar: COP 4.896.000
+Vence: 30/10/2026

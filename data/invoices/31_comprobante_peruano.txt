@@ -1,0 +1,9 @@
+FACTURA ELECTRÓNICA CA-0900
+Contable Andes SAC
+RUC: 20999999999
+Fecha de emisión: 01/10/2026
+Fecha de vencimiento: 05/11/2026
+Descripción: Contabilidad octubre
+Sub Total: S/ 1,271.19
+IGV (18%): S/ 228.81
+Importe Total: S/ 1,500.00

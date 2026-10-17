@@ -1,0 +1,11 @@
+De: cobros@estudiopixelsas.example
+Para: finanzas@nortelabs.example
+Asunto: Factura PX-0280 - Retainer octubre
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Estudio Pixel SAS
+Concepto: Retainer octubre
+Factura: PX-0280
+Total a pagar: USD 1,200.00
+Vence: 30/10/2026

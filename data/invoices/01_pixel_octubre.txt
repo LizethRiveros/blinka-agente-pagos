@@ -1,0 +1,11 @@
+De: cobros@estudiopixelsas.example
+Para: finanzas@nortelabs.example
+Asunto: Factura PX-0231 - Retainer diseño octubre
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Estudio Pixel SAS
+Concepto: Retainer diseño octubre
+Factura: PX-0231
+Total a pagar: COP 4.800.000
+Vence: 25/10/2026

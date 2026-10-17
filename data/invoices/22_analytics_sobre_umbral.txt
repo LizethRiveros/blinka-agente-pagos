@@ -1,0 +1,6 @@
+INVOICE AS-1002
+Vendor: Analytics Studio LLC
+Bill to: Norte Labs Inc.
+Description: Dashboards extra
+Amount due: USD 2,000.01
+Due date: 2026-10-30

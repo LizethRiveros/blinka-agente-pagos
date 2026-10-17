@@ -1,0 +1,11 @@
+De: cobros@lucíafernández.example
+Para: finanzas@nortelabs.example
+Asunto: Factura LF-016 - Cuenta de cobro noviembre
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Lucía Fernández
+Concepto: Cuenta de cobro noviembre
+Factura: LF-016
+Total a pagar: MXN 36 000,00
+Vence: 15/11/2026

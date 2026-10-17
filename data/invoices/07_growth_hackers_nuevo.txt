@@ -1,0 +1,11 @@
+De: cobros@growthhackersllc.example
+Para: finanzas@nortelabs.example
+Asunto: Factura GH-0007 - Campaña de adquisición
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Growth Hackers LLC
+Concepto: Campaña de adquisición
+Factura: GH-0007
+Total a pagar: USD 900.00
+Vence: 28/10/2026

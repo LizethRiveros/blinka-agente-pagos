@@ -1,0 +1,11 @@
+De: cobros@estudiopixelsas.example
+Para: finanzas@nortelabs.example
+Asunto: Factura PX-0244 - Retainer + horas extra
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Estudio Pixel S.A.S.
+Concepto: Retainer + horas extra
+Factura: PX-0244
+Total a pagar: COP 7.200.000
+Vence: 29/10/2026

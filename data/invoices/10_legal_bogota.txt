@@ -1,0 +1,11 @@
+De: cobros@legalbogotásas.example
+Para: finanzas@nortelabs.example
+Asunto: Factura LB-0310 - Asesoría contractual
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Legal Bogotá SAS
+Concepto: Asesoría contractual
+Factura: LB-0310
+Total a pagar: COP 2.000.000
+Vence: 27/10/2026

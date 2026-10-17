@@ -1,0 +1,6 @@
+INVOICE CA-0910
+Vendor: Contable Andes SAC
+Bill to: Norte Labs Inc.
+Description: Contabilidad extra
+Amount due: PEN 1,500.00
+Due date: 2026-10-17

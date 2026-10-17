@@ -1,0 +1,76 @@
+{
+  "company": "Norte Labs Inc. (empresa ficticia, Delaware)",
+  "as_of": "2026-10-17",
+  "period": "Octubre 2026",
+  "fx_to_usd": {
+    "USD": 1,
+    "COP": 0.00025,
+    "MXN": 0.055,
+    "PEN": 0.27,
+    "EUR": 1.08,
+    "ARS": 0.001
+  },
+  "max_per_payment_usd": 5000,
+  "approval_threshold_usd": 2000,
+  "period_budget_usd": 18000,
+  "amount_tolerance_pct": 2,
+  "max_days_overdue": 30,
+  "allowed_beneficiaries": [
+    {
+      "name": "Estudio Pixel SAS",
+      "country": "Colombia",
+      "currency": "COP",
+      "agreed_amount": 4800000,
+      "concept": "Retainer de diseño"
+    },
+    {
+      "name": "CloudHost Inc",
+      "country": "EE. UU.",
+      "currency": "USD",
+      "agreed_amount": 480,
+      "concept": "Hosting"
+    },
+    {
+      "name": "Lucía Fernández",
+      "country": "México",
+      "currency": "MXN",
+      "agreed_amount": 36000,
+      "concept": "Contratista de producto"
+    },
+    {
+      "name": "DevNorte SAC",
+      "country": "Perú",
+      "currency": "PEN",
+      "agreed_amount": 6000,
+      "concept": "Desarrollo"
+    },
+    {
+      "name": "Contable Andes SAC",
+      "country": "Perú",
+      "currency": "PEN",
+      "agreed_amount": 1500,
+      "concept": "Contabilidad"
+    },
+    {
+      "name": "Legal Bogotá SAS",
+      "country": "Colombia",
+      "currency": "COP",
+      "agreed_amount": 2000000,
+      "concept": "Asesoría legal"
+    },
+    {
+      "name": "Soporte TI Perú EIRL",
+      "country": "Perú",
+      "currency": "PEN",
+      "agreed_amount": 4000,
+      "concept": "Soporte TI"
+    },
+    {
+      "name": "Analytics Studio LLC",
+      "country": "EE. UU.",
+      "currency": "USD",
+      "agreed_amount": 2000,
+      "concept": "Analítica y dashboards"
+    }
+  ]
+}

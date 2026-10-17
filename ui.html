@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agente de pagos</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1b2430; --mute:#667085; --line:#e4e7ec;
+          --pay:#067647; --paybg:#ecfdf3; --esc:#b54708; --escbg:#fffaeb; --blk:#b42318; --blkbg:#fef3f2; --acc:#3538cd; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12151b; --card:#1b2029; --ink:#e8ebf0; --mute:#98a2b3; --line:#2c3340;
+          --pay:#47cd89; --paybg:#0f2a1d; --esc:#fdb022; --escbg:#2e2208; --blk:#f97066; --blkbg:#331512; --acc:#9ea5ff; } }
+  * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui,sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { font-size:22px; margin:0 0 2px; } h2 { font-size:16px; margin:0 0 12px; } .mute { color:var(--mute); font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-top:16px; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:16px; }
+  .kpi { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .kpi b { display:block; font-size:24px; } .kpi.bad b { color:var(--blk); } .kpi.good b { color:var(--pay); }
+  button { font:inherit; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:8px; padding:7px 12px; cursor:pointer; }
+  button.primary { background:var(--acc); color:#fff; border-color:var(--acc); } button:disabled { opacity:.5; cursor:default; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; }
+  label { display:block; font-size:13px; color:var(--mute); } input { width:100%; font:inherit; padding:6px 8px; margin-top:3px;
+          border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); }
+  table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:12px; color:var(--mute); font-weight:600; } td.n { text-align:right; white-space:nowrap; }
+  .tag { display:inline-block; padding:2px 9px; border-radius:99px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .PAY { background:var(--paybg); color:var(--pay); } .ESCALATE { background:var(--escbg); color:var(--esc); } .BLOCK { background:var(--blkbg); color:var(--blk); }
+  tr.row { cursor:pointer; } tr.row:hover { background:var(--bg); }
+  .detail { background:var(--bg); } .detail ul { margin:6px 0; padding-left:0; list-style:none; } .detail li { margin:3px 0; }
+  .ok { color:var(--pay); } .no { color:var(--blk); } pre { white-space:pre-wrap; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px; font-size:12px; }
+  .err { color:var(--blk); margin-top:8px; } .scroll { overflow-x:auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Agente de pagos</h1>
+  <div class="mute" id="company"></div>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card">
+    <button class="primary" id="run">Procesar facturas</button>
+    <span class="mute"> El agente lee cada factura, aplica las reglas y decide. Aquí no se mueve dinero real.</span>
+    <div class="mute" id="note"></div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div class="card">
+    <h2>Decisiones</h2>
+    <div class="scroll"><table id="tbl"><thead><tr><th>Factura</th><th>Beneficiario</th><th class="n">Monto</th><th class="n">USD</th><th>Decisión</th><th>Por qué</th></tr></thead><tbody></tbody></table></div>
+    <div class="mute" id="empty">Aún no hay decisiones. Pulsa «Procesar facturas».</div>
+  </div>
+
+  <div class="card">
+    <h2>Reglas de la empresa</h2>
+    <div class="grid" id="rules"></div>
+    <h2 style="margin-top:18px">Beneficiarios permitidos y lo acordado</h2>
+    <div class="scroll"><table id="bens"><thead><tr><th>Nombre</th><th>Moneda</th><th>Monto acordado</th><th></th></tr></thead><tbody></tbody></table></div>
+    <p><button id="addben">+ Beneficiario</button> <button class="primary" id="save">Guardar reglas</button>
+    <span class="mute"> Guardar borra las decisiones actuales; hay que volver a procesar.</span></p>
+  </div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LABEL = {PAY:'Pagar', ESCALATE:'Pendiente de aprobación', BLOCK:'Frenada'};
+const money = n => n == null ? '—' : Number(n).toLocaleString('es-PE', {maximumFractionDigits:2});
+let S = {rules:{}, results:[], summary:null}, open = null, invText = {};
+
+const RULE_FIELDS = [
+  ['max_per_payment_usd','Límite duro por pago (USD)'], ['approval_threshold_usd','Aprobación humana desde (USD)'],
+  ['period_budget_usd','Presupuesto del periodo (USD)'], ['amount_tolerance_pct','Tolerancia vs. lo acordado (%)'],
+  ['max_days_overdue','Días vencida tolerados'], ['as_of','Fecha de hoy (AAAA-MM-DD)'] ];
+
+async function call(path, body) {
+  $('#err').textContent = '';
+  const r = await fetch(path, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const j = await r.json();
+  if (!r.ok) { $('#err').textContent = j.error || 'Error'; return; }
+  S = j; render();
+}
+
+function readers(x) {
+  const r = x.reader || {readers: []};
+  return r.readers.length ? `Leída por: ${esc(r.readers.join(' + '))}.` : 'Ningún lector pudo leer este documento (foto o escaneo sin Claude).';
+}
+
+function preview(f) {
+  const url = '/api/invoice/' + encodeURIComponent(f);
+  if (/\.(png|jpe?g)$/i.test(f)) return `<img src="${url}" alt="Factura ${esc(f)}" style="max-width:100%;border:1px solid var(--line);border-radius:8px">`;
+  if (/\.pdf$/i.test(f)) return `<iframe src="${url}" title="Factura ${esc(f)}" style="width:100%;height:340px;border:1px solid var(--line);border-radius:8px"></iframe>`;
+  return `<pre>${esc(invText[f] || 'cargando…')}</pre>`;
+}
+
+function render() {
+  const r = S.rules, m = S.summary;
+  $('#company').textContent = `${r.company || ''} · ${r.period || ''}`;
+  $('#kpis').innerHTML = !m ? '' : [
+    ['Pagadas', m.pay, ''], ['Frenadas', m.block, ''], ['Pendientes de persona', m.pending, ''],
+    ['Gastado del periodo', `USD ${money(m.spent_usd)} / ${money(m.budget_usd)}`, ''],
+    ['Decisiones acertadas', m.accuracy == null ? '—' : Math.round(m.accuracy*100)+'%', ''],
+    ['Resueltas sin persona (acertadas)', m.autonomy == null ? '—' : Math.round(m.autonomy*100)+'%', ''],
+    ['Pagos fuera de reglas', m.unsafe_payments, m.unsafe_payments ? 'bad' : 'good'],
+    ['Decisiones explicadas', `${m.explained}/${m.total}`, m.explained === m.total ? 'good' : 'bad'] ]
+    .map(([k,v,c]) => `<div class="kpi ${c}"><span class="mute">${k}</span><b>${esc(v)}</b></div>`).join('');
+
+  $('#note').textContent = !m ? '' : m.claude_used ? 'Lectura con dos lectores: reglas + Claude. Solo se paga si coinciden.'
+    : `Lectura solo por reglas (sin ANTHROPIC_API_KEY). ${m.not_evaluated} documentos (fotos y texto libre) requieren Claude: se escalan a una persona y no cuentan en el acierto.`;
+  $('#empty').style.display = S.results.length ? 'none' : '';
+  $('#tbl tbody').innerHTML = S.results.map((x, i) => {
+    const e = x.extracted, h = x.human;
+    const status = h ? (h.action === 'approve' ? 'Aprobada por persona' : 'Rechazada por persona') : LABEL[x.decision];
+    const cls = h ? (h.action === 'approve' ? 'PAY' : 'BLOCK') : x.decision;
+    let row = `<tr class="row" data-i="${i}"><td>${esc(e.invoice_number || x.file)}</td><td>${esc(e.beneficiary || '—')}</td>
+      <td class="n">${e.amount != null ? esc(e.currency || '') + ' ' + money(e.amount) : '—'}</td><td class="n">${money(x.amount_usd)}</td>
+      <td><span class="tag ${cls}">${status}</span></td><td>${esc(x.reason)}</td></tr>`;
+    if (open === i) {
+      row += `<tr class="detail"><td colspan="6"><ul>${x.checks.map(c => `<li><span class="${c.ok?'ok':'no'}">${c.ok?'✔':'✖'}</span> <b>${esc(c.name)}:</b> ${esc(c.detail)}</li>`).join('')}</ul>
+        <div class="mute">${readers(x)} Documento original:</div>${preview(x.file)}
+        ${x.decision === 'ESCALATE' && !h ? `<button class="primary" data-act="approve" data-f="${esc(x.file)}">Aprobar pago</button>
+        <button data-act="reject" data-f="${esc(x.file)}">Rechazar</button>` : ''}</td></tr>`;
+    }
+    return row;
+  }).join('');
+
+  $('#rules').innerHTML = RULE_FIELDS.map(([k, t]) => `<label>${t}<input data-rule="${k}" value="${esc(r[k])}"></label>`).join('');
+  $('#bens tbody').innerHTML = (r.allowed_beneficiaries || []).map((b, i) => `<tr>
+    <td><input data-ben="${i}" data-k="name" value="${esc(b.name)}"></td>
+    <td><input data-ben="${i}" data-k="currency" value="${esc(b.currency)}" style="width:80px"></td>
+    <td><input data-ben="${i}" data-k="agreed_amount" value="${esc(b.agreed_amount)}"></td>
+    <td><button data-del="${i}">Quitar</button></td></tr>`).join('');
+}
+
+function collectRules() {
+  const r = JSON.parse(JSON.stringify(S.rules));
+  document.querySelectorAll('[data-rule]').forEach(i => { const k = i.dataset.rule; r[k] = k === 'as_of' ? i.value.trim() : Number(i.value); });
+  document.querySelectorAll('[data-ben]').forEach(i => {
+    const b = r.allowed_beneficiaries[i.dataset.ben], k = i.dataset.k;
+    b[k] = k === 'agreed_amount' ? Number(i.value) : (k === 'currency' ? i.value.trim().toUpperCase() : i.value.trim());
+  });
+  return r;
+}
+
+document.addEventListener('click', async e => {
+  const t = e.target;
+  if (t.id === 'run') return call('/api/run', {});
+  if (t.id === 'save') return call('/api/rules', collectRules());
+  if (t.id === 'addben') { S.rules = collectRules(); S.rules.allowed_beneficiaries.push({name:'', currency:'USD', agreed_amount:1}); return render(); }
+  if (t.dataset.del) { S.rules = collectRules(); S.rules.allowed_beneficiaries.splice(+t.dataset.del, 1); return render(); }
+  if (t.dataset.act) return call('/api/review', {file:t.dataset.f, action:t.dataset.act});
+  const row = t.closest('tr.row');
+  if (row) {
+    const i = +row.dataset.i; open = open === i ? null : i; render();
+    const f = S.results[i].file;
+    if (open === i && !invText[f] && /\.txt$/i.test(f)) { invText[f] = await (await fetch('/api/invoice/' + encodeURIComponent(f))).text(); render(); }
+  }
+});
+call('/api/state');
+</script>
+</body>
+</html>

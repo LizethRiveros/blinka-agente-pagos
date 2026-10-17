@@ -1,0 +1,11 @@
+De: cobros@devnortesac.example
+Para: finanzas@nortelabs.example
+Asunto: Factura DN-1042 - Desarrollo sprint octubre
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: DevNorte SAC
+Concepto: Desarrollo sprint octubre
+Factura: DN-1042
+Total a pagar: PEN 6,000.00
+Vence: 30/10/2026

@@ -1,0 +1,11 @@
+De: cobros@estudiopixelsas.example
+Para: finanzas@nortelabs.example
+Asunto: Factura s/n - 
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Estudio Pixel SAS
+Concepto: 
+Total a pagar: COP 4.800.000
+Vence: 25/10/2026
+(reenvío del PDF)

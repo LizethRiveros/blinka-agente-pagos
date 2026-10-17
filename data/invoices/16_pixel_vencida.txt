@@ -1,0 +1,11 @@
+De: cobros@estudiopixelsas.example
+Para: finanzas@nortelabs.example
+Asunto: Factura PX-0198 - Retainer diseño agosto
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Estudio Pixel SAS
+Concepto: Retainer diseño agosto
+Factura: PX-0198
+Total a pagar: COP 4.800.000
+Vence: 01/08/2026

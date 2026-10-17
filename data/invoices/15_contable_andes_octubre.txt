@@ -1,0 +1,11 @@
+De: cobros@contableandessac.example
+Para: finanzas@nortelabs.example
+Asunto: Factura CA-0890 - Contabilidad octubre
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Contable Andes SAC
+Concepto: Contabilidad octubre
+Factura: CA-0890
+Total a pagar: PEN 1,500.00
+Vence: 31/10/2026
