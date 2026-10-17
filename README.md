@@ -4,6 +4,14 @@ Un agente que lee facturas (texto, PDF o foto), decide si **pagar, frenar o esca
 
 **Idea central:** el modelo nunca decide. Solo *lee*. La decisión la toma un motor de reglas determinista, y el agente solo paga si **todas** las verificaciones pasan y, cuando hay dos lectores, **ambos coinciden**.
 
+## Para quien lo revise
+
+- [`docs/VERIFICACION.md`](docs/VERIFICACION.md): cómo comprobarlo todo en 10 minutos, con los casos trampa y qué decisión se espera de cada uno.
+- [`docs/EXPLICACION.md`](docs/EXPLICACION.md): el diseño en detalle (por qué el modelo solo lee y el código decide).
+- [`docs/GUION_DEMO.md`](docs/GUION_DEMO.md): guion del video de demo.
+
+**Comprobación manual de las 4 facturas que solo lee Claude:** durante el desarrollo, Claude Code leyó a mano esas 4 (2 fotos y 2 textos libres) y se pasaron por el motor: las 4 decisiones salieron correctas (3 pagar, 1 escalar). Es una comprobación manual, no la autonomía del agente con la API, que sigue pendiente de medir.
+
 ## Cómo correrlo
 
 ```
