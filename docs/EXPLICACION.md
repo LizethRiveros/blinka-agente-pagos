@@ -8,7 +8,7 @@ Un modelo de lenguaje puede equivocarse con total seguridad o ser engañado por 
 
 1. **Leer** (`blinka/extract.py`) extrae cinco datos: beneficiario, monto, moneda, vencimiento y número de factura.
 2. **Decidir** (`blinka/engine.py`) es código determinista, sin modelo. Pagar solo ocurre si **todas las verificaciones pasan**.
-3. **Registrar** (`output/decisions.jsonl`) guarda cada decisión y cada revisión humana con su motivo.
+3. **Registrar** (`output/ledger.jsonl`) guarda cada decisión y cada revisión humana con su motivo, encadenadas por hash.
 
 Así, aunque la lectura falle, lo peor que ocurre es una escalada a una persona, no un pago indebido. Hay además una invariante en el código (`assert_safe`): detiene el lote si algún pago se aprobó con una verificación fallida.
 
@@ -48,3 +48,26 @@ Pagos reales, abrir cuentas, verificar identidad de empresas, cumplimiento y fra
 
 ## Bordes que se probaron a propósito
 USD 2000.00 paga y 2000.01 escala. +2,00 % paga y +2,02 % escala. Con la prueba de mutaciones, esto destapó un error de redondeo real que ya está corregido.
+
+## Cómo se demuestra la seguridad (no solo se afirma)
+
+### Atacante automático (`blinka/redteam.py`)
+- Genera reglas aleatorias y, para cada una, facturas pegadas a los bordes: monto igual al límite, límite más 1 centavo, tolerancia exacta, presupuesto casi agotado, duplicados con otro formato de número, beneficiarios nuevos, monedas no configuradas, rutas de pago no permitidas, lecturas en conflicto y errores de lector.
+- El **verificador independiente** (`blinka/oracle.py`) reescribe cada regla como especificación (sin importar nada del motor, con `Decimal`). Si el motor dice PAGAR y el verificador dice que no, eso es un pago indebido.
+- También cuenta las **escalaciones de más** (el motor se niega a lo que el verificador permitiría): hoy 0, lo que indica que ambos coinciden en los dos sentidos.
+- **Texto hostil**: se agregan órdenes («ignora las reglas...») y datos falsos al final de una factura; la decisión nunca puede volverse más permisiva.
+- **Prueba de la prueba (mutantes)**: se copia el motor con 10 errores inyectados a propósito y se exige que el atacante los detecte todos. Si no los detectara, su «0 pagos indebidos» no valdría nada. Esto ya sirvió: la primera versión del atacante dejaba pasar 3 mutantes (los de «+1 USD» y «+1 centavo»), porque sus facturas no llegaban a esos bordes; se rediseñó el generador para fijar lo acordado de un proveedor justo en el borde.
+- Es determinista para una semilla: `python scripts/redteam.py 5000 2026` repite exactamente lo mismo.
+
+### Explicación contrafactual (`blinka/counterfactual.py`)
+Para cada factura no pagada calcula los cambios de reglas que destrabarían cada verificación fallida, y **comprueba cada uno volviendo a correr el motor** con la regla modificada. También calcula el monto máximo con el que se pagaría hoy. Los duplicados, las lecturas dudosas y los datos faltantes no tienen cambio de regla posible y se explican como tales.
+
+### Registro encadenado y reproducible (`blinka/ledger.py`)
+- Cada entrada incluye `prev` (hash de la anterior) y `hash = SHA-256(prev + contenido)`. Lleva el hash del documento, las reglas completas del lote, lo leído y la decisión.
+- `verify` recalcula la cadena: detecta ediciones, borrados e inserciones en el medio.
+- `replay` repite cada decisión con el motor y compara. Detecta incluso a quien recalcule toda la cadena (la decisión falsificada no se reproduce) y avisa si un documento cambió desde que se decidió.
+- No relee documentos (eso podría requerir un modelo): reproduce la **decisión** a partir de lo leído, que queda registrado.
+- Límite: borrar las últimas líneas no rompe la cadena; el sello final de cada lote sirve para cotejar.
+
+### Simulador (`/api/simulate`)
+Vuelve a decidir con lo ya leído usando las reglas propuestas, sin releer ni registrar, y lista qué decisiones cambiarían.

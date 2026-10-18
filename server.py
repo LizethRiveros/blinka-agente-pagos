@@ -4,7 +4,7 @@ import os
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from blinka import runner
+from blinka import ledger, redteam, runner
 from blinka.engine import norm_name
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -51,6 +51,11 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/api/state":
             with LOCK:
                 return self.send(200, snapshot())
+        if self.path == "/api/audit":
+            with LOCK:
+                v = ledger.verify(runner.LEDGER)
+                rp = ledger.replay(runner.LEDGER, os.path.join(runner.DATA, "invoices")) if v["ok"] else None
+                return self.send(200, {"chain": v, "replay": rp})
         if self.path == "/api/export.csv":
             with LOCK:
                 if not STATE["batch"]:
@@ -84,12 +89,20 @@ class Handler(BaseHTTPRequestHandler):
                         json.dump(data, f, ensure_ascii=False, indent=2)
                 elif self.path == "/api/run":
                     STATE["batch"] = runner.run_batch(STATE["rules"])
+                elif self.path == "/api/redteam":
+                    n = int(data.get("n", 2000))
+                    if not 100 <= n <= 20000:
+                        raise ValueError("n debe estar entre 100 y 20000")
+                    return self.send(200, redteam.run_all(n))
+                elif self.path == "/api/simulate" and STATE["batch"]:
+                    validate_rules(data)
+                    return self.send(200, runner.simulate(STATE["batch"], data))
                 elif self.path == "/api/review" and STATE["batch"]:
                     runner.review(STATE["batch"], data["file"], data["action"])
                 else:
                     return self.send(404, {"error": "no existe"})
                 return self.send(200, snapshot())
-        except (ValueError, KeyError, json.JSONDecodeError) as e:
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as e:
             self.send(400, {"error": str(e)})
 
     def log_message(self, *a):

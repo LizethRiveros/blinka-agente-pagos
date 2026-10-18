@@ -1,17 +1,20 @@
 """Procesa el lote de facturas, registra cada decisión y aplica revisiones humanas."""
+import copy
 import csv
 import io
 import json
 import os
-import time
+import uuid
 
+from . import ledger
+from .counterfactual import explain
 from .engine import PAY, BLOCK, ESCALATE, assert_safe, evaluate, new_state
 from .extract import extract_document, read_document
 
 DOC_TYPES = (".txt", ".pdf", ".png", ".jpg", ".jpeg")
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 DATA = os.path.join(ROOT, "data")
-LOG = os.path.join(ROOT, "output", "decisions.jsonl")
+LEDGER = os.path.join(ROOT, "output", "ledger.jsonl")
 
 
 def load_rules():
@@ -27,26 +30,33 @@ def load_expected():
         return {}
 
 
-def log(event):
-    os.makedirs(os.path.dirname(LOG), exist_ok=True)
-    with open(LOG, "a", encoding="utf-8") as f:
-        f.write(json.dumps(dict(event, ts=time.strftime("%Y-%m-%dT%H:%M:%S")), ensure_ascii=False) + "\n")
-
-
-def run_batch(rules, extractor=extract_document):
+def run_batch(rules, extractor=extract_document, ledger_path=None):
+    path = ledger_path or LEDGER
     folder = os.path.join(DATA, "invoices")
+    batch_id = uuid.uuid4().hex[:12]
+    ledger.append(path, {"event": "batch_start", "batch": batch_id, "rules": rules,
+                         "rules_sha": ledger.sha(ledger.canon(rules))})
     state, results = new_state(), []
     for name in sorted(os.listdir(folder)):
         if not name.lower().endswith(DOC_TYPES):
             continue
-        ex, meta = extractor(read_document(os.path.join(folder, name)))
+        file_path = os.path.join(folder, name)
+        ex, meta = extractor(read_document(file_path))
+        before = copy.deepcopy(state)
         res = evaluate(ex, rules, state, meta)
-        res.update(file=name, extracted=ex, reader=meta, human=None)
+        res.update(file=name, extracted=ex, reader=meta, human=None,
+                   what_if=explain(ex, meta, rules, before, res))
         results.append(res)
-        log({"event": "decision", "file": name, "decision": res["decision"], "readers": meta["readers"],
-             "amount_usd": res["amount_usd"], "reason": res["reason"]})
+        with open(file_path, "rb") as f:
+            doc_sha = ledger.sha(f.read())
+        entry = ledger.append(path, {
+            "event": "decision", "batch": batch_id, "file": name, "doc_sha": doc_sha, "extracted": ex,
+            "meta": {k: meta.get(k) for k in ("readers", "conflicts", "ambiguous", "error")},
+            "decision": res["decision"], "reason": res["reason"], "amount_usd": res["amount_usd"],
+            "failed": [c["name"] for c in res["checks"] if not c["ok"]]})
+        res["seal"] = entry["hash"]
     assert_safe(results)
-    return {"results": results, "state": state}
+    return {"id": batch_id, "results": results, "state": state, "ledger_path": path}
 
 
 def review(batch, file, action, reviewer="persona de finanzas"):
@@ -59,7 +69,8 @@ def review(batch, file, action, reviewer="persona de finanzas"):
     res["human"] = {"action": action, "by": reviewer}
     if action == "approve":
         batch["state"]["spent_usd"] = round(batch["state"]["spent_usd"] + res["amount_usd"], 2)
-    log({"event": "human_review", "file": file, "action": action, "by": reviewer})
+    ledger.append(batch.get("ledger_path") or LEDGER, {"event": "human_review", "batch": batch["id"], "file": file,
+                                                         "action": action, "by": reviewer})
     return res
 
 
@@ -100,12 +111,25 @@ def export_csv(batch):
     out = io.StringIO()
     w = csv.writer(out)
     w.writerow(["archivo", "factura", "beneficiario", "moneda", "monto", "monto_usd", "ruta_de_pago",
-                "decision_agente", "revision_humana", "verificaciones_fallidas", "motivo"])
+                "decision_agente", "revision_humana", "verificaciones_fallidas", "motivo", "que_cambiaria_para_pagar", "sello"])
     for r in batch["results"]:
         e, h = r["extracted"], r["human"]
         w.writerow([_cell(x) for x in (
             r["file"], e.get("invoice_number"), e.get("beneficiary"), e.get("currency"), e.get("amount"),
             r["amount_usd"], e.get("payment_rail"), r["decision"],
             ("aprobada" if h["action"] == "approve" else "rechazada") if h else "",
-            "; ".join(c["name"] for c in r["checks"] if not c["ok"]), r["reason"])])
+            "; ".join(c["name"] for c in r["checks"] if not c["ok"]), r["reason"],
+            "; ".join(c["text"] for c in (r.get("what_if") or {}).get("rule_changes", [])), r.get("seal", "")[:16])])
     return out.getvalue()
+
+
+def simulate(batch, new_rules):
+    """¿Qué cambiaría si se guardaran estas reglas? Vuelve a decidir con lo ya leído (sin releer ni registrar)."""
+    state, changes, counts = new_state(), [], {PAY: 0, ESCALATE: 0, BLOCK: 0}
+    for r in batch["results"]:
+        res = evaluate(copy.deepcopy(r["extracted"]), new_rules, state, r["reader"])
+        counts[res["decision"]] += 1
+        if res["decision"] != r["decision"]:
+            changes.append({"file": r["file"], "before": r["decision"], "after": res["decision"], "reason": res["reason"]})
+    return {"changes": changes, "counts": counts,
+            "note": "Las aprobaciones humanas ya dadas no se reaplican en la simulación."}

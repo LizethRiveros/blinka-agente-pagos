@@ -16,12 +16,25 @@ Un agente que lee facturas (texto, PDF o foto), decide si **pagar, frenar o esca
 
 ```
 python server.py                        # http://localhost:8765  (PORT=… para otro puerto)
-python -m unittest discover -s tests    # 33 pruebas
+python -m unittest discover -s tests    # 43 pruebas
 python scripts/eval.py                  # mide al agente contra la verdad conocida
+python scripts/redteam.py               # atacante: 5000 facturas hostiles, busca UN pago indebido
+python scripts/replay.py                # verifica la cadena del registro y reproduce cada decisión
 python scripts/eval.py --claude         # además, con Claude (necesita ANTHROPIC_API_KEY en el entorno)
 ```
 
 Solo Python estándar (3.10+), sin instalar nada. Pillow se usa únicamente para *generar* las fotos de prueba, que ya vienen incluidas. `PyMuPDF` es opcional para leer PDFs más complejos.
+
+## Lo que lo distingue: se puede probar, entender y auditar
+
+Casi todo agente de pagos muestra «mira qué bien lee». Aquí el reto central es otro: **un solo pago indebido descalifica**, y eso no se demuestra con 40 facturas hechas a mano.
+
+1. **Atacante automático** (`python scripts/redteam.py`, o el botón «Atacar al agente»). Lanza miles de facturas hostiles (montos pegados a cada borde, duplicados disfrazados, rutas no permitidas, monedas raras, lecturas en conflicto) contra reglas aleatorias, y un **verificador independiente** (`blinka/oracle.py`; no comparte código con el motor y usa aritmética exacta) comprueba que el motor nunca pague lo que la especificación prohíbe. Con la semilla 2026: **5000 facturas, 125 juegos de reglas, 0 pagos indebidos**. Además prueba que el atacante tiene dientes: se inyectan 10 errores a propósito al motor (un límite 1 USD más holgado, un umbral 1 centavo más alto, ignorar duplicados...) y **el atacante detecta los 10**. Esa prueba de la prueba destapó, mientras se construía, que el atacante original no veía 3 de ellos; se corrigió.
+2. **Explicación contrafactual.** Cada factura no pagada dice **qué tendría que cambiar para que se pague** («subir la tolerancia a 50 %», «con las reglas de hoy se pagaría si el monto fuera de COP 4.896.000 o menos»). Cada propuesta se **verifica volviendo a correr el motor**; no es una opinión. Se muestra como información, no como recomendación.
+3. **Registro encadenado y reproducible** (`blinka/ledger.py`). Cada decisión guarda el hash de la factura, las reglas vigentes, lo leído y el hash de la entrada anterior. Editar o borrar una línea rompe la cadena (`python scripts/replay.py`). Y como el motor es determinista, **cualquiera puede repetir cada decisión desde el registro y obtener exactamente lo mismo**: aun quien recalcule toda la cadena para falsificar una decisión queda en evidencia, porque esa decisión ya no se reproduce. Un agente cuyo juicio es un modelo no puede ofrecer esto.
+4. **Simulador de reglas.** Antes de guardar un cambio, muestra qué decisiones cambiarían (incluidos los efectos en cadena por presupuesto).
+
+Honestidad: el verificador independiente lo escribió el mismo autor que el motor, así que cubre errores de implementación, no un malentendido de la regla misma. El registro detecta alteraciones del medio, pero quien borre las últimas líneas no rompe la cadena; por eso cada lote tiene un sello (hash final) que conviene copiar aparte.
 
 ## Novedades
 
@@ -37,7 +50,7 @@ Solo Python estándar (3.10+), sin instalar nada. Pillow se usa únicamente para
    - Si los dos lectores **no coinciden**, o el documento trae **totales contradictorios**, se escala. Si nada se puede leer, se escala. Un `$` suelto no se interpreta como moneda.
    - El documento se trata como dato, nunca como instrucción.
 2. **Decidir** (`blinka/engine.py`). 11 verificaciones (la de ruta de pago solo aplica si la factura indica una): lectura confiable, datos completos, moneda soportada, duplicado, límite duro por pago, beneficiario permitido, ruta de pago permitida, coincide con lo acordado, umbral de aprobación humana, presupuesto del periodo y vencimiento. Todo lo que falla baja a `ESCALAR` (decide una persona) o `FRENAR`.
-3. **Registrar** (`output/decisions.jsonl`): cada decisión y cada revisión humana, con su motivo. En la pantalla, cada factura muestra sus verificaciones y el documento original.
+3. **Registrar** (`output/ledger.jsonl`): cada decisión y cada revisión humana, con su motivo, en un registro encadenado por hash (ver arriba). En la pantalla, cada factura muestra sus verificaciones y el documento original.
 
 ## Lo que se midió
 

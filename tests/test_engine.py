@@ -194,5 +194,106 @@ class CsvExport(unittest.TestCase):
             self.assertIn(c, runner.load_rules()["fx_to_usd"])
 
 
+class Audit(unittest.TestCase):
+    """Registro encadenado, reproducción, explicaciones y simulador."""
+
+    @classmethod
+    def setUpClass(cls):
+        import tempfile
+        cls.dir = tempfile.mkdtemp()
+        cls.path = os.path.join(cls.dir, "ledger.jsonl")
+        cls.rules = runner.load_rules()
+        cls.batch = runner.run_batch(cls.rules, extractor=rules_only, ledger_path=cls.path)
+
+    def _lines(self):
+        with open(self.path, encoding="utf-8") as f:
+            return f.read().splitlines()
+
+    def _write(self, path, lines):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+
+    def test_chain_and_replay_are_clean(self):
+        from blinka import ledger
+        self.assertTrue(ledger.verify(self.path)["ok"])
+        rp = ledger.replay(self.path, os.path.join(runner.DATA, "invoices"))
+        self.assertEqual((rp["mismatches"], rp["warnings"]), ([], []))
+        self.assertEqual(rp["replayed"], len(self.batch["results"]))
+
+    def test_editing_a_line_breaks_the_chain(self):
+        from blinka import ledger
+        lines = self._lines()
+        i = next(k for k, ln in enumerate(lines) if '"decision":"PAY"' in ln.replace(" ", "") or '"decision": "PAY"' in ln)
+        lines[i] = lines[i].replace("PAY", "BLOCK", 1)
+        bad = os.path.join(self.dir, "edited.jsonl")
+        self._write(bad, lines)
+        v = ledger.verify(bad)
+        self.assertFalse(v["ok"])
+        self.assertEqual(v["bad_at"], i)
+
+    def test_deleting_a_middle_line_breaks_the_chain(self):
+        from blinka import ledger
+        lines = self._lines()
+        del lines[5]
+        bad = os.path.join(self.dir, "deleted.jsonl")
+        self._write(bad, lines)
+        self.assertFalse(ledger.verify(bad)["ok"])
+
+    def test_resealed_forgery_is_caught_by_replay(self):
+        """Un atacante que recalcula toda la cadena igual queda en evidencia: la decisión no se reproduce."""
+        import json
+        from blinka import ledger
+        forged = os.path.join(self.dir, "forged.jsonl")
+        prev, out, done = ledger.GENESIS, [], False
+        for e in ledger.read(self.path):
+            if not done and e.get("event") == "decision" and e["decision"] == "ESCALATE":
+                e["decision"], done = "PAY", True  # el falsificador cambia UNA decisión
+            e["prev"] = prev
+            e["hash"] = ledger._seal(e)  # ...y recalcula toda la cadena para que cuadre
+            prev = e["hash"]
+            out.append(json.dumps(e, ensure_ascii=False))
+        self._write(forged, out)
+        self.assertTrue(ledger.verify(forged)["ok"])
+        self.assertEqual(len(ledger.replay(forged)["mismatches"]), 1)
+
+    def test_every_escalation_proposal_is_verified_by_the_engine(self):
+        proposals = [r for r in self.batch["results"] if r["what_if"] and r["what_if"]["rule_changes"]]
+        self.assertGreater(len(proposals), 5)
+        for r in proposals:
+            self.assertTrue(all(c["verified"] for c in r["what_if"]["rule_changes"]), r["file"])
+            self.assertTrue(r["what_if"]["pays_with_rule_changes"], r["file"])
+
+    def test_duplicates_have_no_rule_change(self):
+        r = next(r for r in self.batch["results"] if r["file"].startswith("06_"))
+        self.assertEqual(r["what_if"]["rule_changes"], [])
+        self.assertTrue(r["what_if"]["other"])
+
+    def test_max_amount_really_pays(self):
+        r = next(r for r in self.batch["results"] if r["file"].startswith("08_"))
+        top = r["what_if"]["max_amount"]
+        self.assertEqual(top["amount"], 4896000.0)  # 4,800,000 + 2 %
+
+    def test_simulator_shows_what_a_rule_change_would_do(self):
+        new = dict(self.rules, approval_threshold_usd=3000)
+        sim = runner.simulate(self.batch, new)
+        self.assertIn("22_analytics_sobre_umbral.txt", [c["file"] for c in sim["changes"]])
+        self.assertEqual(runner.simulate(self.batch, self.rules)["changes"], [])
+
+
+class RedTeam(unittest.TestCase):
+    def test_real_engine_has_no_unsafe_payment(self):
+        from blinka import engine, redteam
+        s = redteam.attack(engine, runner.load_rules(), invoices=1500)
+        self.assertEqual((s["unsafe"], s["crashes"], s["over_cautious"]), (0, 0, 0))
+        self.assertGreater(s["pay"], 30)  # el atacante también tiene que lograr pagos legítimos
+
+    def test_every_injected_bug_is_caught(self):
+        from blinka import redteam
+        r = redteam.run_all(invoices=1500)
+        missed = [m["name"] for m in r["mutants"] if not m["caught"]]
+        self.assertEqual(missed, [])
+        self.assertEqual(r["hostile_text"]["more_permissive"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

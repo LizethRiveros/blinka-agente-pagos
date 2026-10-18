@@ -29,6 +29,8 @@
   .detail { background:var(--bg); } .detail ul { margin:6px 0; padding-left:0; list-style:none; } .detail li { margin:3px 0; }
   .ok { color:var(--pay); } .no { color:var(--blk); } pre { white-space:pre-wrap; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px; font-size:12px; }
   .err { color:var(--blk); margin-top:8px; } .scroll { overflow-x:auto; }
+  .whatif { margin:10px 0; padding:10px 12px; border:1px dashed var(--line); border-radius:8px; } .whatif ul { margin:6px 0 2px; padding-left:18px; list-style:disc; }
+  .out { margin-top:10px; } .out ul { margin:6px 0; padding-left:18px; }
 </style>
 </head>
 <body>
@@ -45,6 +47,14 @@
   </div>
 
   <div class="card">
+    <h2>Pruebas de que no paga mal</h2>
+    <button id="attack">Atacar al agente</button> <button id="audit">Verificar registro</button>
+    <span class="mute"> El atacante lanza miles de facturas hostiles y busca un solo pago indebido. El registro está encadenado: se puede verificar y reproducir cada decisión.</span>
+    <div class="out" id="attackout"></div>
+    <div class="out" id="auditout"></div>
+  </div>
+
+  <div class="card">
     <h2>Decisiones</h2>
     <div class="scroll"><table id="tbl"><thead><tr><th>Factura</th><th>Beneficiario</th><th class="n">Monto</th><th class="n">USD</th><th>Decisión</th><th>Por qué</th></tr></thead><tbody></tbody></table></div>
     <div class="mute" id="empty">Aún no hay decisiones. Pulsa «Procesar facturas».</div>
@@ -55,8 +65,9 @@
     <div class="grid" id="rules"></div>
     <h2 style="margin-top:18px">Beneficiarios permitidos y lo acordado</h2>
     <div class="scroll"><table id="bens"><thead><tr><th>Nombre</th><th>Moneda</th><th>Monto acordado</th><th>Rutas de pago</th><th></th></tr></thead><tbody></tbody></table></div>
-    <p><button id="addben">+ Beneficiario</button> <button class="primary" id="save">Guardar reglas</button>
-    <span class="mute"> Guardar borra las decisiones actuales; hay que volver a procesar.</span></p>
+    <p><button id="addben">+ Beneficiario</button> <button id="sim">Simular cambio</button> <button class="primary" id="save">Guardar reglas</button>
+    <span class="mute"> Simular muestra qué decisiones cambiarían sin guardar. Guardar borra las decisiones actuales; hay que volver a procesar.</span></p>
+    <div class="out" id="simout"></div>
   </div>
 </main>
 <script>
@@ -91,6 +102,57 @@ function preview(f) {
   return `<pre>${esc(invText[f] || 'cargando…')}</pre>`;
 }
 
+function whatIf(x) {
+  const w = x.what_if;
+  if (!w) return '';
+  const items = w.rule_changes.map(c => `<li>${esc(c.text)} ${c.verified ? '<span class="ok">✔ verificado</span>' : ''}</li>`).join('');
+  const top = w.max_amount ? `<li>Con las reglas de hoy se pagaría si el monto fuera de ${esc(w.max_amount.currency)} ${money(w.max_amount.amount)} o menos.</li>` : '';
+  const other = w.other.map(t => `<li>${esc(t)}</li>`).join('');
+  if (!items && !top && !other) return '';
+  return `<div class="whatif"><b>¿Qué tendría que cambiar para pagarla?</b> <span class="mute">Cada cambio lo comprobó el motor; no es una recomendación.</span>
+    <ul>${items}${top}${other}</ul>${w.pays_with_rule_changes ? '<div class="mute">Con todos los cambios de reglas juntos, el motor la pagaría.</div>' : ''}</div>`;
+}
+
+async function post(path, body) {
+  const r = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || 'Error');
+  return j;
+}
+
+async function attack() {
+  $('#attackout').textContent = 'Atacando… (unos segundos)';
+  try {
+    const j = await post('/api/redteam', {n:2000}), a = j.attack, h = j.hostile_text;
+    $('#attackout').innerHTML = `<b>${a.invoices.toLocaleString('es-PE')} facturas hostiles</b> en ${a.rule_sets} juegos de reglas distintos:
+      ${a.pay} pagadas, ${a.escalate} escaladas, ${a.block} frenadas.
+      <b class="${a.unsafe || a.crashes ? 'no' : 'ok'}">Pagos indebidos: ${a.unsafe}</b> · caídas del motor: ${a.crashes}.<br>
+      Texto hostil al final de la factura: ${h.more_permissive} decisiones más permisivas de ${h.tested}.<br>
+      <b>Prueba de la prueba:</b> el atacante detectó ${j.mutants_caught} de ${j.mutants_total} errores inyectados a propósito en el motor.
+      <ul>${j.mutants.map(m => `<li>${esc(m.name)}: ${m.caught ? '<span class="ok">detectado</span>' : '<span class="no">NO detectado</span>'}</li>`).join('')}</ul>
+      <span class="mute">Semilla ${j.seed}: repetible. El verificador es independiente del motor pero lo escribió el mismo autor.</span>`;
+  } catch (e) { $('#attackout').innerHTML = `<span class="no">${esc(e.message)}</span>`; }
+}
+
+async function audit() {
+  const j = await (await fetch('/api/audit')).json(), c = j.chain, r = j.replay;
+  $('#auditout').innerHTML = !c.ok ? `<span class="no"><b>Cadena rota</b> en la entrada ${c.bad_at}: ${esc(c.problem)}</span>`
+    : `<span class="ok"><b>Cadena íntegra</b></span>: ${c.entries} entradas. Sello final <code>${esc(c.head.slice(0, 16))}…</code><br>
+       ${r.replayed} decisiones reproducidas desde lo registrado: <b class="${r.mismatches.length ? 'no' : 'ok'}">${r.mismatches.length} discrepancias</b>.
+       ${r.warnings.map(w => `<br><span class="mute">Aviso: ${esc(w)}</span>`).join('')}`;
+}
+
+async function simulate() {
+  if (!S.summary) { $('#simout').innerHTML = '<span class="no">Primero procesa las facturas.</span>'; return; }
+  try {
+    const j = await post('/api/simulate', collectRules());
+    $('#simout').innerHTML = j.changes.length
+      ? `<b>${j.changes.length} decisiones cambiarían</b> (${j.counts.PAY} pagar, ${j.counts.ESCALATE} escalar, ${j.counts.BLOCK} frenar):<ul>${j.changes.map(c =>
+          `<li>${esc(c.file)}: ${LABEL[c.before]} → <b>${LABEL[c.after]}</b></li>`).join('')}</ul><span class="mute">${esc(j.note)}</span>`
+      : 'Con estas reglas no cambiaría ninguna decisión.';
+  } catch (e) { $('#simout').innerHTML = `<span class="no">${esc(e.message)}</span>`; }
+}
+
 function render() {
   const r = S.rules, m = S.summary;
   $('#company').textContent = `${r.company || ''} · ${r.period || ''}`;
@@ -115,7 +177,8 @@ function render() {
       <td><span class="tag ${cls}">${status}</span></td><td>${esc(x.reason)}</td></tr>`;
     if (open === i) {
       row += `<tr class="detail"><td colspan="6"><ul>${x.checks.map(c => `<li><span class="${c.ok?'ok':'no'}">${c.ok?'✔':'✖'}</span> <b>${esc(c.name)}:</b> ${esc(c.detail)}</li>`).join('')}</ul>
-        <div class="mute">${readers(x)} Documento original:</div>${preview(x.file)}
+        ${whatIf(x)}
+        <div class="mute">${readers(x)} Sello de la decisión: <code>${esc((x.seal || '').slice(0, 16))}</code>. Documento original:</div>${preview(x.file)}
         ${x.decision === 'ESCALATE' && !h ? `<button class="primary" data-act="approve" data-f="${esc(x.file)}">Aprobar pago</button>
         <button data-act="reject" data-f="${esc(x.file)}">Rechazar</button>` : ''}</td></tr>`;
     }
@@ -147,6 +210,9 @@ document.addEventListener('click', async e => {
   if (t.id === 'run') return call('/api/run', {});
   if (t.id === 'export') return S.summary ? (location.href = '/api/export.csv') : ($('#err').textContent = 'Primero procesa las facturas.');
   if (t.id === 'save') return call('/api/rules', collectRules());
+  if (t.id === 'sim') return simulate();
+  if (t.id === 'attack') return attack();
+  if (t.id === 'audit') return audit();
   if (t.id === 'addben') { S.rules = collectRules(); S.rules.allowed_beneficiaries.push({name:'', currency:'USD', agreed_amount:1, rails:[]}); return render(); }
   if (t.dataset.del) { S.rules = collectRules(); S.rules.allowed_beneficiaries.splice(+t.dataset.del, 1); return render(); }
   if (t.dataset.act) return call('/api/review', {file:t.dataset.f, action:t.dataset.act});
