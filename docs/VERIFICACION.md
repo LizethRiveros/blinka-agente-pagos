@@ -27,7 +27,7 @@ python server.py
 ```
 Abre http://localhost:8765. Comprueba:
 1. Arriba están las **reglas de la empresa**, editables (límite por pago, umbral de aprobación, presupuesto, tolerancia, vencimiento, tipos de cambio y beneficiarios).
-2. Pulsa *Procesar facturas*. Cada factura muestra su decisión (pagar, frenar o escalar), **las 10 verificaciones** y el motivo en palabras. Las escaladas tienen botones *Aprobar pago* / *Rechazar* para la persona, y esa revisión también queda registrada.
+2. Pulsa *Procesar facturas*. Cada factura muestra su decisión (pagar, frenar o escalar), **las verificaciones** y el motivo en palabras. Las escaladas tienen botones *Aprobar pago* / *Rechazar* para la persona, y esa revisión también queda registrada.
 3. Cambia una regla (por ejemplo `approval_threshold_usd` a 500), pulsa *Guardar reglas* y vuelve a pulsar *Procesar facturas*: las decisiones cambian según la nueva regla.
 
 ## 4. Intentar romperlo (3 min)
