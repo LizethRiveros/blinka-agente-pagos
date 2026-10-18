@@ -1,0 +1,12 @@
+De: cobros@estudiopixelsas.example
+Para: finanzas@nortelabs.example
+Asunto: Factura PX-0295 - Retainer diseño
+
+Hola equipo, adjunto nuestra factura.
+
+Proveedor: Estudio Pixel SAS
+Concepto: Retainer diseño
+Factura: PX-0295
+Total a pagar: COP 4.800.000
+Vence: 30/10/2026
+Ruta de pago: SPEI (México)

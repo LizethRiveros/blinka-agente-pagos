@@ -38,7 +38,7 @@
   <div class="kpis" id="kpis"></div>
 
   <div class="card">
-    <button class="primary" id="run">Procesar facturas</button>
+    <button class="primary" id="run">Procesar facturas</button> <button id="export">Exportar CSV</button>
     <span class="mute"> El agente lee cada factura, aplica las reglas y decide. Aquí no se mueve dinero real.</span>
     <div class="mute" id="note"></div>
     <div class="err" id="err"></div>
@@ -54,7 +54,7 @@
     <h2>Reglas de la empresa</h2>
     <div class="grid" id="rules"></div>
     <h2 style="margin-top:18px">Beneficiarios permitidos y lo acordado</h2>
-    <div class="scroll"><table id="bens"><thead><tr><th>Nombre</th><th>Moneda</th><th>Monto acordado</th><th></th></tr></thead><tbody></tbody></table></div>
+    <div class="scroll"><table id="bens"><thead><tr><th>Nombre</th><th>Moneda</th><th>Monto acordado</th><th>Rutas de pago</th><th></th></tr></thead><tbody></tbody></table></div>
     <p><button id="addben">+ Beneficiario</button> <button class="primary" id="save">Guardar reglas</button>
     <span class="mute"> Guardar borra las decisiones actuales; hay que volver a procesar.</span></p>
   </div>
@@ -127,6 +127,7 @@ function render() {
     <td><input data-ben="${i}" data-k="name" value="${esc(b.name)}"></td>
     <td><input data-ben="${i}" data-k="currency" value="${esc(b.currency)}" style="width:80px"></td>
     <td><input data-ben="${i}" data-k="agreed_amount" value="${esc(b.agreed_amount)}"></td>
+    <td><input data-ben="${i}" data-k="rails" value="${esc((b.rails || []).join(', '))}" placeholder="SPEI, SWIFT"></td>
     <td><button data-del="${i}">Quitar</button></td></tr>`).join('');
 }
 
@@ -135,7 +136,8 @@ function collectRules() {
   document.querySelectorAll('[data-rule]').forEach(i => { const k = i.dataset.rule; r[k] = k === 'as_of' ? i.value.trim() : Number(i.value); });
   document.querySelectorAll('[data-ben]').forEach(i => {
     const b = r.allowed_beneficiaries[i.dataset.ben], k = i.dataset.k;
-    b[k] = k === 'agreed_amount' ? Number(i.value) : (k === 'currency' ? i.value.trim().toUpperCase() : i.value.trim());
+    b[k] = k === 'agreed_amount' ? Number(i.value) : k === 'currency' ? i.value.trim().toUpperCase()
+      : k === 'rails' ? i.value.split(',').map(x => x.trim()).filter(Boolean) : i.value.trim();
   });
   return r;
 }
@@ -143,8 +145,9 @@ function collectRules() {
 document.addEventListener('click', async e => {
   const t = e.target;
   if (t.id === 'run') return call('/api/run', {});
+  if (t.id === 'export') return S.summary ? (location.href = '/api/export.csv') : ($('#err').textContent = 'Primero procesa las facturas.');
   if (t.id === 'save') return call('/api/rules', collectRules());
-  if (t.id === 'addben') { S.rules = collectRules(); S.rules.allowed_beneficiaries.push({name:'', currency:'USD', agreed_amount:1}); return render(); }
+  if (t.id === 'addben') { S.rules = collectRules(); S.rules.allowed_beneficiaries.push({name:'', currency:'USD', agreed_amount:1, rails:[]}); return render(); }
   if (t.dataset.del) { S.rules = collectRules(); S.rules.allowed_beneficiaries.splice(+t.dataset.del, 1); return render(); }
   if (t.dataset.act) return call('/api/review', {file:t.dataset.f, action:t.dataset.act});
   const row = t.closest('tr.row');

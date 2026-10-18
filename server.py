@@ -51,6 +51,17 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/api/state":
             with LOCK:
                 return self.send(200, snapshot())
+        if self.path == "/api/export.csv":
+            with LOCK:
+                if not STATE["batch"]:
+                    return self.send(409, {"error": "primero procesa las facturas"})
+                body = ("\ufeff" + runner.export_csv(STATE["batch"])).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv; charset=utf-8")
+            self.send_header("Content-Disposition", 'attachment; filename="decisiones.csv"')
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         if self.path.startswith("/api/invoice/"):
             name = os.path.basename(self.path[len("/api/invoice/"):])
             ctype = {".pdf": "application/pdf", ".png": "image/png", ".jpg": "image/jpeg",

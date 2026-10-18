@@ -1,0 +1,7 @@
+INVOICE CH-88170
+Vendor: CloudHost Inc
+Bill to: Norte Labs Inc.
+Description: Hosting - Oct 2026
+Amount due: USD 480.00
+Due date: 2026-10-30
+Payment method: USDC on Base

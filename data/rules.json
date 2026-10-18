@@ -8,7 +8,12 @@
     "MXN": 0.055,
     "PEN": 0.27,
     "EUR": 1.08,
-    "ARS": 0.001
+    "ARS": 0.001,
+    "BRL": 0.18,
+    "CLP": 0.00105,
+    "BOB": 0.145,
+    "CRC": 0.0019,
+    "ZAR": 0.055
   },
   "max_per_payment_usd": 5000,
   "approval_threshold_usd": 2000,
@@ -21,56 +26,90 @@
       "country": "Colombia",
       "currency": "COP",
       "agreed_amount": 4800000,
-      "concept": "Retainer de diseño"
+      "concept": "Retainer de diseño",
+      "rails": [
+        "Bre-B",
+        "SWIFT"
+      ]
     },
     {
       "name": "CloudHost Inc",
       "country": "EE. UU.",
       "currency": "USD",
       "agreed_amount": 480,
-      "concept": "Hosting"
+      "concept": "Hosting",
+      "rails": [
+        "ACH",
+        "WIRE",
+        "SWIFT"
+      ]
     },
     {
       "name": "Lucía Fernández",
       "country": "México",
       "currency": "MXN",
       "agreed_amount": 36000,
-      "concept": "Contratista de producto"
+      "concept": "Contratista de producto",
+      "rails": [
+        "SPEI",
+        "SWIFT"
+      ]
     },
     {
       "name": "DevNorte SAC",
       "country": "Perú",
       "currency": "PEN",
       "agreed_amount": 6000,
-      "concept": "Desarrollo"
+      "concept": "Desarrollo",
+      "rails": [
+        "LOCAL",
+        "SWIFT"
+      ]
     },
     {
       "name": "Contable Andes SAC",
       "country": "Perú",
       "currency": "PEN",
       "agreed_amount": 1500,
-      "concept": "Contabilidad"
+      "concept": "Contabilidad",
+      "rails": [
+        "LOCAL",
+        "SWIFT"
+      ]
     },
     {
       "name": "Legal Bogotá SAS",
       "country": "Colombia",
       "currency": "COP",
       "agreed_amount": 2000000,
-      "concept": "Asesoría legal"
+      "concept": "Asesoría legal",
+      "rails": [
+        "Bre-B",
+        "SWIFT"
+      ]
     },
     {
       "name": "Soporte TI Perú EIRL",
       "country": "Perú",
       "currency": "PEN",
       "agreed_amount": 4000,
-      "concept": "Soporte TI"
+      "concept": "Soporte TI",
+      "rails": [
+        "LOCAL",
+        "SWIFT"
+      ]
     },
     {
       "name": "Analytics Studio LLC",
       "country": "EE. UU.",
       "currency": "USD",
       "agreed_amount": 2000,
-      "concept": "Analítica y dashboards"
+      "concept": "Analítica y dashboards",
+      "rails": [
+        "ACH",
+        "WIRE",
+        "SWIFT"
+      ]
     }
   ]
 }

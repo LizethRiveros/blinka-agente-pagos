@@ -7,7 +7,7 @@ Todo se puede comprobar en menos de 10 minutos, sin instalar nada más que Pytho
 ```
 python -m unittest discover -s tests
 ```
-Esperado: `Ran 24 tests ... OK`.
+Esperado: `Ran 33 tests ... OK`.
 
 ## 2. Medición contra la verdad conocida (1 min)
 
@@ -15,8 +15,8 @@ Esperado: `Ran 24 tests ... OK`.
 python scripts/eval.py
 ```
 Esperado (lector por reglas, sin clave de API):
-- 34 documentos evaluados, decisiones correctas 100 %, **pagos fuera de reglas: 0**.
-- Autonomía 56 %: las 4 facturas que solo puede leer Claude (2 fotos y 2 textos libres) se **escalan a una persona** en vez de adivinarse.
+- 36 documentos evaluados, decisiones correctas 100 %, **pagos fuera de reglas: 0**.
+- Autonomía 53 %: las 4 facturas que solo puede leer Claude (2 fotos y 2 textos libres) se **escalan a una persona** en vez de adivinarse.
 
 `data/expected.json` guarda la decisión y los campos verdaderos de cada factura, y solo se usa para medir.
 
@@ -43,8 +43,10 @@ Casos trampa incluidos en `data/invoices/` (el número es el prefijo del archivo
 | 17 | texto que ordena un pago urgente | escalar (no obedece la instrucción) |
 | 21 / 22 | USD 2000.00 / 2000.01 (borde del umbral) | paga / escala |
 | 23 / 24 | +2,00 % / +2,02 % (borde de tolerancia) | paga / escala |
+| 18 | Estudio Pixel (Colombia) pide pagar por SPEI (ruta de México) | escalar (ruta no permitida) |
+| 19 | CloudHost pide pagar en USDC (stablecoin) | escalar (ruta no permitida) |
 | 25 | número de factura de otro proveedor | no es duplicado |
-| 29 | moneda no configurada | escalar |
+| 29 | moneda no configurada (JPY) | escalar |
 | 32 | totales contradictorios en el mismo documento | escalar |
 | 91 | presupuesto agotado | escalar |
 
@@ -63,7 +65,7 @@ python scripts/eval.py --claude
 Con la clave, Claude lee también las fotos y el texto libre, y solo se paga si **ambos lectores coinciden**. **Este resultado aún no se ha medido con la API**; ver "Lo que está medido y lo que no" en el README.
 
 ## Lo que está verificado y lo que no
-- ✔ El motor de reglas: determinista, 24 pruebas, mutaciones, bordes exactos, invariante `assert_safe` (nunca hay un PAGAR con una verificación fallida).
+- ✔ El motor de reglas: determinista, 33 pruebas, mutaciones, bordes exactos, invariante `assert_safe` (nunca hay un PAGAR con una verificación fallida).
 - ✔ Las 4 facturas que solo lee Claude, leídas a mano por Claude Code durante el desarrollo y pasadas por el motor: las 4 decisiones salieron correctas (3 pagar, 1 escalar). **Es una comprobación manual, no la autonomía del agente.**
 - ✘ Autonomía del agente con Claude vía API: pendiente.
 - ✘ Facturas del mundo real: todo es ficticio y escrito por el mismo autor del lector, así que el 100 % del lector por reglas prueba el motor, no que el lector entienda facturas reales.

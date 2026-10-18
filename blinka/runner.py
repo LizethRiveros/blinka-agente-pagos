@@ -1,4 +1,6 @@
 """Procesa el lote de facturas, registra cada decisión y aplica revisiones humanas."""
+import csv
+import io
 import json
 import os
 import time
@@ -85,3 +87,25 @@ def summarize(batch, rules):
         "claude_used": has_claude,
         "explained": sum(bool(r["reason"]) for r in rs),
     }
+
+
+def _cell(v):
+    """Evita inyección de fórmulas al abrir el CSV en Excel o Sheets (el texto viene de facturas externas)."""
+    v = "" if v is None else str(v)
+    return "'" + v if v[:1] in ("=", "+", "-", "@", "\t", "\r") else v
+
+
+def export_csv(batch):
+    """Registro para conciliar: qué se decidió con cada factura y por qué."""
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(["archivo", "factura", "beneficiario", "moneda", "monto", "monto_usd", "ruta_de_pago",
+                "decision_agente", "revision_humana", "verificaciones_fallidas", "motivo"])
+    for r in batch["results"]:
+        e, h = r["extracted"], r["human"]
+        w.writerow([_cell(x) for x in (
+            r["file"], e.get("invoice_number"), e.get("beneficiary"), e.get("currency"), e.get("amount"),
+            r["amount_usd"], e.get("payment_rail"), r["decision"],
+            ("aprobada" if h["action"] == "approve" else "rechazada") if h else "",
+            "; ".join(c["name"] for c in r["checks"] if not c["ok"]), r["reason"])])
+    return out.getvalue()

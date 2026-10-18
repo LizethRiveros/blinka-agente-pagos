@@ -17,6 +17,18 @@ def norm_name(s):
     return re.sub(r"[^a-z0-9]", "", s)
 
 
+RAIL_ALIASES = (("USDC", "USDC"), ("USDT", "USDC"), ("STABLECOIN", "USDC"), ("SPEI", "SPEI"), ("BREB", "BREB"),
+                ("SEPA", "SEPA"), ("PIX", "PIX"), ("SWIFT", "SWIFT"), ("ACH", "ACH"), ("WIRE", "WIRE"),
+                ("LOCAL", "LOCAL"), ("TRANSFERENCIA", "LOCAL"))
+
+
+def norm_rail(s):
+    """'Bre-B', 'bre b' y 'BREB' son la misma ruta; las stablecoins se agrupan como USDC.
+    Una ruta desconocida se conserva tal cual: no coincide con ninguna permitida y se escala."""
+    c = re.sub(r"[^A-Z0-9]", "", (s or "").upper())
+    return next((v for k, v in RAIL_ALIASES if k in c), c)
+
+
 def norm_inv(s):
     """'px 0231', 'PX-0231' y 'PX-231' son la misma factura."""
     c = re.sub(r"[^A-Z0-9]", "", (s or "").upper())
@@ -108,6 +120,14 @@ def evaluate(ex, rules, state, meta=None):
                             f"{ben['agreed_amount']:,.0f}", ben["currency"], f"{ex['amount']:,.0f}",
                             (ex["amount"] / ben["agreed_amount"] - 1) * 100)),
                   ESCALATE)
+
+        if ben and ben.get("rails") and ex.get("payment_rail"):
+            allowed = {norm_rail(x) for x in ben["rails"]}
+            ok = norm_rail(ex["payment_rail"]) in allowed
+            check("Ruta de pago permitida", ok,
+                  "La ruta %s está permitida para %s." % (ex["payment_rail"], ben["name"]) if ok
+                  else "La factura pide pagar por %s y %s solo tiene permitido: %s." % (
+                      ex["payment_rail"], ben["name"], ", ".join(ben["rails"])), ESCALATE)
 
         thr = rules["approval_threshold_usd"]
         check("Aprobación humana por monto", amount_usd <= thr,

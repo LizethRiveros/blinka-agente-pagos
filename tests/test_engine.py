@@ -148,5 +148,51 @@ class Rules(unittest.TestCase):
         self.assertEqual(self.decide(ex(), {"error": "Claude no pudo leer (HTTPError)"}), ESCALATE)
 
 
+class Rails(unittest.TestCase):
+    def setUp(self):
+        self.rules = runner.load_rules()
+
+    def decide(self, e):
+        return evaluate(e, self.rules, new_state())["decision"]
+
+    def test_allowed_rail_pays(self):
+        self.assertEqual(self.decide(ex(payment_rail="ACH")), PAY)
+        self.assertEqual(self.decide(ex(payment_rail="swift")), PAY)
+
+    def test_rail_not_allowed_for_that_vendor_escalates(self):
+        self.assertEqual(self.decide(ex(payment_rail="SPEI")), ESCALATE)
+
+    def test_stablecoin_request_escalates(self):
+        for raw in ("USDC on Base", "Stablecoin (USDT)", "usdc"):
+            self.assertEqual(self.decide(ex(payment_rail=raw)), ESCALATE, raw)
+
+    def test_unknown_rail_never_pays(self):
+        self.assertEqual(self.decide(ex(payment_rail="trueque")), ESCALATE)
+
+    def test_no_rail_in_invoice_keeps_old_behavior(self):
+        self.assertEqual(self.decide(ex()), PAY)
+
+    def test_rail_alias_matches(self):
+        from blinka.engine import norm_rail
+        self.assertEqual(norm_rail("Bre-B"), norm_rail("BRE B"))
+
+    def test_rail_is_read_from_text(self):
+        d, _ = extract_regex("Proveedor: CloudHost Inc\nTotal a pagar: USD 480.00\nRuta de pago: SPEI\n")
+        self.assertEqual(d["payment_rail"], "SPEI")
+
+
+class CsvExport(unittest.TestCase):
+    def test_csv_has_one_row_per_invoice_and_neutralizes_formulas(self):
+        b = runner.run_batch(runner.load_rules(), extractor=rules_only)
+        text = runner.export_csv(b)
+        self.assertEqual(len(text.strip().splitlines()), len(b["results"]) + 1)
+        b["results"][0]["extracted"]["beneficiary"] = "=HYPERLINK(1)"
+        self.assertIn("'=HYPERLINK(1)", runner.export_csv(b))
+
+    def test_new_currencies_are_configured(self):
+        for c in ("BRL", "CLP", "BOB", "CRC", "ZAR"):
+            self.assertIn(c, runner.load_rules()["fx_to_usd"])
+
+
 if __name__ == "__main__":
     unittest.main()

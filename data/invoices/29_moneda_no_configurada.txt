@@ -7,5 +7,5 @@ Hola equipo, adjunto nuestra factura.
 Proveedor: Andes Papeles SpA
 Concepto: Insumos
 Factura: AP-0100
-Total a pagar: CLP 800.000
+Total a pagar: JPY 120.000
 Vence: 30/10/2026

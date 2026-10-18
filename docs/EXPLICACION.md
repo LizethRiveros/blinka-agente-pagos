@@ -7,12 +7,12 @@ El reto Blinka pide un agente que revise cuentas por pagar, decida cuáles pagar
 Un modelo de lenguaje puede equivocarse con total seguridad o ser engañado por el texto de una factura. Por eso:
 
 1. **Leer** (`blinka/extract.py`) extrae cinco datos: beneficiario, monto, moneda, vencimiento y número de factura.
-2. **Decidir** (`blinka/engine.py`) es código determinista, sin modelo. Pagar solo ocurre si **las 10 verificaciones pasan**.
+2. **Decidir** (`blinka/engine.py`) es código determinista, sin modelo. Pagar solo ocurre si **todas las verificaciones pasan**.
 3. **Registrar** (`output/decisions.jsonl`) guarda cada decisión y cada revisión humana con su motivo.
 
 Así, aunque la lectura falle, lo peor que ocurre es una escalada a una persona, no un pago indebido. Hay además una invariante en el código (`assert_safe`): detiene el lote si algún pago se aprobó con una verificación fallida.
 
-## Las 10 verificaciones y qué pasa si fallan
+## Las verificaciones y qué pasa si fallan
 | Verificación | Si falla |
 |---|---|
 | Lectura confiable (lectores coinciden, el documento no se contradice) | escalar |
@@ -21,6 +21,7 @@ Así, aunque la lectura falle, lo peor que ocurre es una escalada a una persona,
 | Sin duplicado | frenar |
 | Límite duro por pago | frenar |
 | Beneficiario permitido | escalar |
+| Ruta de pago permitida (solo si la factura indica una: SPEI, Bre-B, ACH, SWIFT, USDC...) | escalar |
 | Coincide con lo acordado (±tolerancia) | escalar |
 | Aprobación humana por monto | escalar |
 | Presupuesto del periodo | escalar |
@@ -35,7 +36,7 @@ La decisión final es la más severa de las fallas (frenar > escalar > pagar).
 - El documento se trata como **dato**, nunca como instrucción: la factura 17 intenta ordenar un pago urgente y no tiene efecto.
 
 ## Explicabilidad
-Cada factura en la pantalla muestra sus 10 verificaciones con su detalle y el motivo en lenguaje corriente (por ejemplo: "Se acordó 4,800,000 COP y la factura cobra 7,200,000 (+50.00%)"). No hace falta abrir el código.
+Cada factura en la pantalla muestra sus verificaciones con su detalle y el motivo en lenguaje corriente (por ejemplo: "Se acordó 4,800,000 COP y la factura cobra 7,200,000 (+50.00%)"). No hace falta abrir el código.
 
 ## Qué dejamos fuera a propósito (lo pide el reto)
 Pagos reales, abrir cuentas, verificar identidad de empresas, cumplimiento y fraude, y el diseño de la app de Blinka.
