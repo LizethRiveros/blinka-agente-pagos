@@ -8,9 +8,11 @@ Un agente que lee facturas (texto, PDF o foto), decide si **pagar, frenar o esca
 
 - [`docs/VERIFICACION.md`](docs/VERIFICACION.md): cómo comprobarlo todo en 10 minutos, con los casos trampa y qué decisión se espera de cada uno.
 - [`docs/EXPLICACION.md`](docs/EXPLICACION.md): el diseño en detalle (por qué el modelo solo lee y el código decide).
+- [`docs/PITCH.md`](docs/PITCH.md): pitch con lo que se dice y el clic de cada paso (`http://localhost:8765/?demo=1` lo guía en pantalla).
+- [`docs/PARA_REVISORES.md`](docs/PARA_REVISORES.md): qué pidieron, qué entregamos y qué feedback buscamos.
 - [`docs/GUION_DEMO.md`](docs/GUION_DEMO.md): guion del video de demo.
 
-**Comprobación manual de las 4 facturas que solo lee Claude:** durante el desarrollo, Claude Code leyó a mano esas 4 (2 fotos y 2 textos libres) y se pasaron por el motor: las 4 decisiones salieron correctas (3 pagar, 1 escalar). Es una comprobación manual, no la autonomía del agente con la API, que sigue pendiente de medir.
+**Las 2 fotos las lee el OCR local; los 2 textos libres sin etiquetas solo una IA.** Durante el desarrollo, Claude Code leyó a mano esos textos y se pasaron por el motor: las decisiones salieron correctas. Es una comprobación manual, no la autonomía del agente con la API, que sigue pendiente de medir.
 
 ## Cómo correrlo
 
@@ -48,7 +50,8 @@ Honestidad: el verificador independiente lo escribió el mismo autor que el moto
 1. **Leer** (`blinka/extract.py`). Cadena de lectura:
    - Texto o PDF con texto → lector por reglas, sin dependencias (incluye PDFs comprimidos).
    - Con `GEMINI_API_KEY` (y sin clave de Claude) → Gemini lee también, con el mismo contrato de solo lectura.
-   - Con `ANTHROPIC_API_KEY` → Claude lee también, y es el único que lee fotos y escaneos (los recibe directamente, sin OCR local).
+   - Fotos → OCR local con Tesseract (gratis, sin enviar nada a internet), y luego el mismo lector por reglas. Sin OCR ni IA, una foto se escala.
+   - Con `ANTHROPIC_API_KEY` → Claude lee también, y además lee escaneos y texto libre sin etiquetas (los recibe directamente).
    - Si los dos lectores **no coinciden**, o el documento trae **totales contradictorios**, se escala. Si nada se puede leer, se escala. Un `$` suelto no se interpreta como moneda.
    - El documento se trata como dato, nunca como instrucción.
 2. **Decidir** (`blinka/engine.py`). 11 verificaciones (la de ruta de pago solo aplica si la factura indica una): lectura confiable, datos completos, moneda soportada, duplicado, límite duro por pago, beneficiario permitido, ruta de pago permitida, coincide con lo acordado, umbral de aprobación humana, presupuesto del periodo y vencimiento. Todo lo que falla baja a `ESCALAR` (decide una persona) o `FRENAR`.
@@ -58,9 +61,9 @@ Honestidad: el verificador independiente lo escribió el mismo autor que el moto
 
 40 facturas ficticias en `data/invoices/`: correo, chat, comprobante peruano con IGV, hilo con totales contradictorios, texto libre, 4 PDF y 2 fotos. Incluyen trampas: duplicado (con otro formato de número y sin número), mismo número de otro proveedor, beneficiario nuevo, moneda distinta a la acordada, moneda no configurada, inyección de instrucciones, vencida, presupuesto agotado y **bordes exactos** (USD 2000.00 paga y 2000.01 escala; +2,00% paga y +2,02% escala).
 
-Resultado con el **lector por reglas** (`python scripts/eval.py`): 36 documentos evaluados, decisiones correctas 36/36, **0 pagos fuera de reglas** (sobre los 38). Los 4 documentos restantes (2 fotos y 2 textos sin etiquetas) solo los puede leer Claude: sin clave se escalan a una persona y no cuentan en el acierto.
+Resultado con el **lector por reglas + OCR local** (`python scripts/eval.py`): 38 documentos evaluados, decisiones correctas 38/38, **0 pagos fuera de reglas**. Los 2 documentos restantes (textos libres sin etiquetas) solo los puede leer una IA: sin ella se escalan a una persona y no cuentan en el acierto.
 
-> **Ojo con este número:** el lector por reglas y las facturas de prueba los escribí yo, así que ese 36/36 es una prueba de que el motor funciona, no de que el lector entienda facturas del mundo real. Ese es el motivo de existir de la lectura con Claude y del cruce de dos lectores. Los resultados con Claude **aún no se han medido**: `python scripts/eval.py --claude` los produce.
+> **Ojo con este número:** el lector, el OCR y las facturas de prueba (fotos limpias, hechas por mí) son míos, así que ese 38/38 es una prueba de que el motor funciona, no de que la lectura aguante escaneos reales manchados. Ese es el motivo de existir de la lectura con IA y del cruce de dos lectores. Los resultados con IA por API **aún no se han medido**: `python scripts/eval.py --claude` o `--gemini` los producen.
 
 Las pruebas se validaron también con *mutaciones*: se rompió el motor a propósito de 6 formas (umbral, tolerancia, duplicados, presupuesto, normalización, pagar todo) y cada una hizo fallar alguna prueba. Eso destapó un error real de redondeo: una factura de USD 489,60 (+2,00% exacto) se habría escalado por error.
 
