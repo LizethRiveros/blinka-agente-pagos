@@ -1,5 +1,8 @@
 # Guion del video de demo (≈ 2 minutos)
 
+**Modo guiado:** abre http://localhost:8765/?demo=1 (o el botón «Modo demo»). Resalta en rosa cada elemento, muestra qué decir y avanza con → ; con Enter o «Hacerlo por mí» hace el clic por ti.
+
+
 Antes de grabar: `python server.py`, abre http://localhost:8765 a pantalla completa y borra `output/ledger.jsonl` para empezar limpio. Sin clave de API, para que el resultado sea el mismo que en la guía de verificación.
 
 **Idea que hilvana todo:** no mostramos que el agente lee bien; mostramos que **no puede pagar mal, que se entiende cada caso y que se puede auditar**.

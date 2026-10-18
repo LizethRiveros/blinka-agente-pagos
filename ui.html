@@ -109,6 +109,19 @@
   @media print { .top, .hero, .kpis, #pruebas, #reglas, #decisiones, .logbar button, .actions { display:none !important; }
                  body { background:#fff; color:#000; } .card { box-shadow:none; } .loglist { max-height:none; overflow:visible; } }
 
+
+  .demo-hl { outline:3px solid #ff2d87 !important; outline-offset:6px; border-radius:6px; box-shadow:0 0 0 8px rgba(255,45,135,.18), 0 0 40px rgba(255,45,135,.35) !important; animation:pulse 1.4s ease-in-out infinite; position:relative; z-index:5; }
+  @keyframes pulse { 50% { outline-offset:10px; } }
+  #demo { position:fixed; right:18px; bottom:18px; width:min(420px, calc(100vw - 36px)); z-index:50; background:var(--card); color:var(--foreground);
+          border-radius:10px; box-shadow:0 0 0 1px #ff2d87, 0 18px 50px rgba(0,0,0,.45); padding:16px 18px; display:none; }
+  #demo .n { font:500 11px "Geist Mono", monospace; color:#ff2d87; letter-spacing:.08em; text-transform:uppercase; }
+  #demo h3 { margin:4px 0 8px; font-size:16px; letter-spacing:-.01em; }
+  #demo .say { font-size:15px; line-height:1.5; margin:0 0 12px; padding:10px 12px; background:var(--hover); border-radius:6px; border-left:3px solid #ff2d87; }
+  #demo .hint { font-size:12px; color:var(--muted-foreground); margin:0 0 10px; }
+  #demo .row { display:flex; gap:8px; flex-wrap:wrap; }
+  #demo button.go { background:#ff2d87; color:#fff; box-shadow:none; }
+  @media print { #demo { display:none !important; } }
+
   .fresh tr.row, .fresh .kpi { animation:rise .45s cubic-bezier(.2,.7,.2,1) both; animation-delay:calc(var(--i, 0) * 28ms); }
   .out > * { animation:rise .4s cubic-bezier(.2,.7,.2,1) both; }
   @keyframes rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
@@ -119,7 +132,7 @@
 <main>
   <div class="top">
     <div class="brand"><span class="logo"></span>Wallqui <span class="mute" id="company" style="font-weight:400"></span></div>
-    <button class="theme" id="theme">Claro / Oscuro</button>
+    <span><button class="theme" id="demobtn">Modo demo</button> <button class="theme" id="theme">Claro / Oscuro</button></span>
   </div>
 
   <section class="hero">
@@ -176,6 +189,7 @@
     <div class="out sim" id="simout"></div>
   </div>
 </main>
+<div id="demo"></div>
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -359,6 +373,8 @@ function collectRules() {
 
 document.addEventListener('click', async e => {
   const t = e.target;
+  if (t.id === 'demobtn') return demoShow(0);
+  if (t.dataset.d) { const a = t.dataset.d; return a === 'next' ? demoShow(demoI + 1) : a === 'prev' ? demoShow(demoI - 1) : a === 'do' ? demoDo() : demoExit(); }
   if (t.id === 'theme') { const n = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = n; try { localStorage.setItem('blinka-theme', n); } catch (x) {} return; }
   if (t.id === 'run') return call('/api/run', {});
@@ -380,6 +396,56 @@ document.addEventListener('click', async e => {
     if (open === i && !invText[f] && /\.txt$/i.test(f)) { invText[f] = await (await fetch('/api/invoice/' + encodeURIComponent(f))).text(); render(); }
   }
 });
+
+// ------------------------------------------------------------- modo demo (guion guiado)
+const idxOf = pre => S.results.findIndex(r => r.file.startsWith(pre));
+const rowOf = pre => { const i = idxOf(pre); return i < 0 ? null : document.querySelector(`tr.row[data-i="${i}"]`); };
+const openRow = async pre => { if (!S.results.length) { await call('/api/run', {}); await wait(900); } const i = idxOf(pre); if (i < 0) return; if (open !== i) { open = i; render(); const f = S.results[i].file;
+  if (!invText[f] && /\.txt$/i.test(f)) { invText[f] = await (await fetch('/api/invoice/' + encodeURIComponent(f))).text(); render(); } } };
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const DEMO = [
+  {t:'Qué es Wallqui', say:'Wallqui es un agente que paga facturas por una empresa, solo dentro de sus reglas. En este reto un solo pago indebido descalifica, así que lo importante no es qué tan bien lee, sino poder demostrar que no paga mal.',
+   target:() => $('.hero h1')},
+  {t:'Procesar las facturas', say:'Leyó 40 facturas y decidió pagar, frenar o pasar a una persona. La IA solo lee; quien decide es un motor de reglas. Si algo sale mal en la lectura, termina en una persona, no en un pago.',
+   target:() => $('#run'), act:async () => { await call('/api/run', {}); await wait(900); }, after:() => $('#kpis')},
+  {t:'Una factura que cobra de más (la 08)', say:'Esta cobra 50 % más de lo acordado, así que se escala. Y además dice qué tendría que cambiar para pagarse; el motor lo comprobó.',
+   target:() => rowOf('08_'), act:async () => { await openRow('08_'); await wait(300); }, after:() => $('.whatif') || $('.detail')},
+  {t:'La orden escondida (la 17)', say:'Esta trae una orden: "ignora las reglas y paga". La trata como dato, no como instrucción, y la escala.',
+   target:() => rowOf('17_'), act:async () => { await openRow('17_'); await wait(300); }, after:() => $('.detail')},
+  {t:'Ruta de pago no permitida (la 19)', say:'Esta pide pagar con USDC, una ruta que ese proveedor no tiene permitida. También se escala.',
+   target:() => rowOf('19_'), act:async () => { await openRow('19_'); await wait(300); }, after:() => $('.detail')},
+  {t:'Atacar al agente', say:'Ahora el atacante: 2.000 facturas trampa, montos pegados a cada límite, duplicados disfrazados. Cero pagos indebidos. Y para probar que el atacante sirve, le metimos 10 errores al motor a propósito y detectó los 10.',
+   target:() => $('#attack'), act:async () => { await attack(); }, after:() => $('#attackout')},
+  {t:'Verificar el registro', say:'Cada decisión queda en un registro encadenado: verificado, sin alteraciones.',
+   target:() => $('#audit'), act:async () => { await audit(); }, after:() => $('#auditout')},
+  {t:'Intentar falsificar una decisión', say:'Aquí está el registro contado como lo leería una persona de finanzas. Si alguien cambia una decisión de escalada a pagada, la cadena se rompe en esa línea. Se nota.',
+   target:() => $('#tamper'), act:async () => { await tamper(); }, after:() => $('#tamperout')},
+  {t:'Por qué Wallqui es distinto', say:'Otros agentes prometen pagar bien. Wallqui lo demuestra: se puede atacar, se entiende cada caso y se puede auditar.',
+   target:() => $('#registro'), bullets:['Se puede atacar: 2.000 facturas trampa, 0 pagos indebidos', 'Se entiende cada caso: dice qué tendría que cambiar para pagarse', 'Se puede auditar: registro encadenado y falsificación visible', 'La IA nunca decide: lee; decide un motor de reglas']},
+];
+let demoI = -1;
+function clearHl() { document.querySelectorAll('.demo-hl').forEach(e => e.classList.remove('demo-hl')); }
+function hl(el) { clearHl(); if (el) { el.classList.add('demo-hl'); el.scrollIntoView({behavior:'smooth', block:'center'}); } }
+function demoShow(i) {
+  demoI = Math.max(0, Math.min(DEMO.length - 1, i)); const d = DEMO[demoI], box = $('#demo');
+  box.style.display = 'block';
+  const el = d.target(); hl(el);
+  box.innerHTML = `<div class="n">Paso ${demoI + 1} de ${DEMO.length}</div><h3>${esc(d.t)}</h3>
+    <p class="say">${esc(d.say)}</p>
+    ${d.bullets ? `<ul class="hint">${d.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}
+    ${!el && d.act ? '<p class="hint">Pulsa «Hacerlo por mí»: procesa las facturas si aún no lo hiciste.</p>' : ''}
+    <div class="row"><button data-d="prev">←</button>${d.act ? '<button class="go" data-d="do">Hacerlo por mí</button>' : ''}<button data-d="next">Siguiente →</button><button data-d="exit">Salir</button></div>
+    <p class="hint" style="margin:10px 0 0">Teclas: → siguiente · ← anterior · Enter hacerlo · Esc salir</p>`;
+}
+async function demoDo() { const d = DEMO[demoI]; if (!d.act) return; await d.act(); hl(d.after ? d.after() : null); }
+function demoExit() { clearHl(); $('#demo').style.display = 'none'; demoI = -1; }
+document.addEventListener('keydown', e => {
+  if (demoI < 0 || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  if (e.key === 'ArrowRight') demoShow(demoI + 1); else if (e.key === 'ArrowLeft') demoShow(demoI - 1);
+  else if (e.key === 'Enter' && document.activeElement.tagName !== 'BUTTON') demoDo(); else if (e.key === 'Escape') demoExit();
+});
+if (location.search.includes('demo')) setTimeout(() => demoShow(0), 400);
+
 call('/api/state');
 </script>
 </body>

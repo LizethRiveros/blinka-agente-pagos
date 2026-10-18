@@ -45,6 +45,7 @@ class Handler(BaseHTTPRequestHandler):
         return json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
 
     def do_GET(self):
+        self.path = self.path.split("?")[0]  # permite /?demo=1
         if self.path == "/":
             with open(os.path.join(ROOT, "ui.html"), "rb") as f:
                 return self.send(200, f.read(), "text/html")
