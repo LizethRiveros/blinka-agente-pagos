@@ -1,5 +1,6 @@
 """Verificador escrito por Gemini a partir de docs/ESPECIFICACION.md, sin ver el código del motor.
 
+  python scripts/gemini_oracle.py prompt     # SIN API: copia al portapapeles el texto para pegarlo en la app de Gemini
   python scripts/gemini_oracle.py generate   # pide a Gemini el verificador y lo guarda en output/gemini_oracle.py
   python scripts/gemini_oracle.py compare    # corre el atacante usando ESE verificador contra el motor real
 
@@ -32,6 +33,26 @@ Responde SOLO con el código Python, sin explicaciones ni bloques markdown.
 
 ESPECIFICACIÓN:
 """
+
+
+def prompt():
+    """Sin API: deja el texto completo listo para pegar en la app o web de Gemini (y lo copia al portapapeles en Windows)."""
+    with open(os.path.join(ROOT, "docs", "ESPECIFICACION.md"), encoding="utf-8") as f:
+        text = PROMPT + f.read()
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    path = os.path.join(os.path.dirname(OUT), "prompt_para_gemini.txt")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
+    try:
+        import subprocess
+        subprocess.run(["clip"], input=text.encode("utf-16-le"), check=True)
+        print("Copiado al portapapeles.")
+    except Exception:
+        print("No pude copiar al portapapeles; abre el archivo y copia su contenido.")
+    print("Texto guardado en %s" % path)
+    print("1) Pega en Gemini (gemini.google.com, modelo Pro).  2) Copia SOLO el código que responda.")
+    print("3) Guárdalo como %s (el archivo debe empezar en 'import' o 'from', sin ```)." % OUT)
+    print("4) Léelo y corre: python scripts/gemini_oracle.py compare")
 
 
 def generate():
@@ -79,4 +100,4 @@ def compare():
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
-    {"generate": generate, "compare": compare}.get(cmd, lambda: sys.exit(__doc__))()
+    {"prompt": prompt, "generate": generate, "compare": compare}.get(cmd, lambda: sys.exit(__doc__))()
