@@ -1,4 +1,4 @@
-# Agente de pagos (reto Blinka)
+# Wallqui: agente de pagos (reto Blinka)
 
 Un agente que lee facturas (texto, PDF o foto), decide si **pagar, frenar o escalar a una persona** según las reglas de la empresa, y deja registrado por qué. No mueve dinero real.
 
