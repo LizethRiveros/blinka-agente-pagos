@@ -134,14 +134,14 @@ def _meta(rng):
     return {"conflicts": [], "ambiguous": [], "error": None}
 
 
-def attack(engine, base_rules, invoices=5000, seed=2026, per_set=40):
+def attack(engine, base_rules, invoices=5000, seed=2026, per_set=40, oracle_cls=Oracle):
     """Corre el atacante contra `engine` (el real o un mutante). Devuelve estadísticas."""
     rng = random.Random(seed)
     stats = {"invoices": 0, "rule_sets": 0, "pay": 0, "escalate": 0, "block": 0, "unsafe": 0,
              "crashes": 0, "over_cautious": 0, "examples": []}
     while stats["invoices"] < invoices:
         rules = _rules(rng, base_rules)
-        state, oracle, history = engine.new_state(), Oracle(rules), []
+        state, oracle, history = engine.new_state(), oracle_cls(rules), []
         stats["rule_sets"] += 1
         for _ in range(per_set):
             ex = _invoice(rng, rules, history, state["spent_usd"])
