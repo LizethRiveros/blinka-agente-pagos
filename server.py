@@ -4,7 +4,7 @@ import os
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from blinka import ledger, redteam, runner
+from blinka import ledger, narrate, redteam, runner
 from blinka.engine import norm_name
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -56,6 +56,10 @@ class Handler(BaseHTTPRequestHandler):
                 v = ledger.verify(runner.LEDGER)
                 rp = ledger.replay(runner.LEDGER, os.path.join(runner.DATA, "invoices")) if v["ok"] else None
                 return self.send(200, {"chain": v, "replay": rp})
+        if self.path == "/api/log":
+            with LOCK:
+                b = STATE["batch"]
+                return self.send(200, narrate.readable_log(runner.LEDGER, b["id"] if b else None))
         if self.path == "/api/export.csv":
             with LOCK:
                 if not STATE["batch"]:
@@ -94,6 +98,9 @@ class Handler(BaseHTTPRequestHandler):
                     if not 100 <= n <= 20000:
                         raise ValueError("n debe estar entre 100 y 20000")
                     return self.send(200, redteam.run_all(n))
+                elif self.path == "/api/tamper-demo":
+                    b = STATE["batch"]
+                    return self.send(200, narrate.tamper_demo(runner.LEDGER, b["id"] if b else None))
                 elif self.path == "/api/simulate" and STATE["batch"]:
                     validate_rules(data)
                     return self.send(200, runner.simulate(STATE["batch"], data))

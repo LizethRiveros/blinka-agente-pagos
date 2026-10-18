@@ -297,3 +297,22 @@ class RedTeam(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Registro(unittest.TestCase):
+    def test_registro_legible_y_demo_de_manipulacion(self):
+        import tempfile
+        from blinka import narrate
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "l.jsonl")
+            b = runner.run_batch(runner.load_rules(), extractor=rules_only, ledger_path=path)
+            log = narrate.readable_log(path, b["id"])
+            self.assertTrue(log["chain"]["ok"])
+            self.assertEqual(len(log["lines"]), 1 + len(b["results"]))  # inicio de lote + una por factura
+            self.assertTrue(all(len(l["text"]) > 20 and l["seal"] for l in log["lines"]))
+            before = open(path, "rb").read()
+            demo = narrate.tamper_demo(path, b["id"])
+            self.assertFalse(demo["chain"]["ok"])
+            self.assertEqual(demo["chain"]["bad_at"], demo["seq"])
+            self.assertEqual(open(path, "rb").read(), before)  # el registro verdadero no se toca
+            self.assertTrue(narrate.readable_log(path, b["id"])["chain"]["ok"])

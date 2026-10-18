@@ -94,6 +94,21 @@
   .stat { font-size:15px; line-height:1.6; }
   .seal { font-size:12px; }
 
+
+  .logbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:14px 0 6px; }
+  .chip { padding:4px 10px; font-size:12px; border-radius:99px; }
+  .chip.on { background:var(--primary); color:var(--primary-foreground); box-shadow:none; }
+  .badge { font-size:12px; padding:4px 10px; border-radius:99px; box-shadow:0 0 0 1px var(--border); }
+  .loglist { list-style:none; margin:6px 0 0; padding:0; max-height:460px; overflow:auto; }
+  .loglist li { display:grid; grid-template-columns:70px 1fr auto; gap:12px; padding:9px 4px; border-bottom:1px solid var(--border); align-items:start; }
+  .loglist .t { color:var(--muted-foreground); font-family:"Geist Mono", ui-monospace, monospace; font-size:12px; }
+  .loglist .s { color:var(--muted-foreground); font-family:"Geist Mono", ui-monospace, monospace; font-size:11px; }
+  .loglist li.PAY b { color:var(--pay); } .loglist li.ESCALATE b { color:var(--esc); } .loglist li.BLOCK b { color:var(--blk); }
+  .tamper { margin-top:14px; padding:14px; border-radius:var(--radius); box-shadow:0 0 0 1px var(--blk); }
+  .tamper del { color:var(--blk); } .tamper ins { color:var(--pay); text-decoration:none; }
+  @media print { .top, .hero, .kpis, #pruebas, #reglas, #decisiones, .logbar button, .actions { display:none !important; }
+                 body { background:#fff; color:#000; } .card { box-shadow:none; } .loglist { max-height:none; overflow:visible; } }
+
   .fresh tr.row, .fresh .kpi { animation:rise .45s cubic-bezier(.2,.7,.2,1) both; animation-delay:calc(var(--i, 0) * 28ms); }
   .out > * { animation:rise .4s cubic-bezier(.2,.7,.2,1) both; }
   @keyframes rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
@@ -120,7 +135,7 @@
 
   <div class="kpis" id="kpis"></div>
 
-  <div class="card">
+  <div class="card" id="pruebas">
     <h2>Pruebas</h2>
     <p class="lead">No te pedimos confiar: atácalo.</p>
     <div class="mute">El atacante lanza miles de facturas hostiles y busca un solo pago indebido. El registro está encadenado: se puede verificar y reproducir cada decisión.</div>
@@ -129,13 +144,29 @@
     <div class="out stat" id="auditout"></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="decisiones">
     <h2>Decisiones</h2>
     <div class="scroll"><table id="tbl"><thead><tr><th>Factura</th><th>Beneficiario</th><th class="n">Monto</th><th class="n">USD</th><th>Decisión</th><th>Por qué</th></tr></thead><tbody></tbody></table></div>
     <div class="mute" id="empty" style="margin-top:12px">Aún no hay decisiones. Pulsa «Procesar facturas».</div>
   </div>
 
-  <div class="card">
+  <div class="card" id="registro">
+    <h2>Registro</h2>
+    <p class="lead">Cada decisión, contada como la leería una persona de finanzas.</p>
+    <div class="mute">Estas líneas salen del registro real: cada una lleva el sello que la une a la anterior. Si alguien cambia una, la cadena se rompe y se ve.</div>
+    <div class="logbar">
+      <span class="badge" id="chain">—</span>
+      <button class="chip on" data-f="all">Todo</button><button class="chip" data-f="PAY">Pagó</button>
+      <button class="chip" data-f="ESCALATE">Escaló</button><button class="chip" data-f="BLOCK">Frenó</button>
+      <button class="chip" data-f="human">Personas</button>
+      <span style="flex:1"></span>
+      <button id="tamper">Intentar falsificar una decisión</button> <button id="print">Imprimir acta</button>
+    </div>
+    <div id="tamperout"></div>
+    <ul class="loglist" id="loglist"><li><span></span><span class="mute">Procesa las facturas para ver el registro.</span><span></span></li></ul>
+  </div>
+
+  <div class="card" id="reglas">
     <h2>Reglas de la empresa</h2>
     <div class="grid" id="rules"></div>
     <h2 style="margin-top:26px">Beneficiarios permitidos y lo acordado</h2>
@@ -164,7 +195,7 @@ async function call(path, body) {
   const r = await fetch(path, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
   const j = await r.json();
   if (!r.ok) { $('#err').textContent = j.error || 'Error'; return; }
-  S = j; fresh = path === '/api/run'; render(); fresh = false;
+  S = j; fresh = path === '/api/run'; render(); fresh = false; loadLog();
 }
 
 function readers(x) {
@@ -228,6 +259,32 @@ async function simulate() {
           `<li>${esc(c.file)}: ${LABEL[c.before]} → <b>${LABEL[c.after]}</b></li>`).join('')}</ul><span class="mute">${esc(j.note)}</span>`
       : 'Con estas reglas no cambiaría ninguna decisión.';
   } catch (e) { $('#simout').innerHTML = `<span class="no">${esc(e.message)}</span>`; }
+}
+
+
+let LOG = {lines:[], chain:null}, logFilter = 'all';
+async function loadLog() {
+  try { LOG = await (await fetch('/api/log')).json(); } catch (e) { return; }
+  const c = LOG.chain;
+  $('#chain').innerHTML = !c ? '—' : c.ok ? `<span class="ok">● Cadena íntegra</span> · ${c.entries} entradas · sello <span class="seal">${esc(c.head.slice(0, 12))}</span>`
+    : `<span class="no">● Cadena rota en la línea ${c.bad_at}</span>`;
+  renderLog();
+}
+function renderLog() {
+  const f = logFilter, rows = LOG.lines.filter(l => f === 'all' || (f === 'human' ? l.event === 'human_review' : l.decision === f));
+  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('on', b.dataset.f === f));
+  $('#loglist').innerHTML = !S.summary ? '<li><span></span><span class="mute">Procesa las facturas para ver el registro.</span><span></span></li>'
+    : rows.map(l => `<li class="${esc(l.decision || '')}"><span class="t">${esc((l.ts || '').slice(11, 19))}</span><span>${esc(l.text)}</span><span class="s">${esc(l.seal)}</span></li>`).join('')
+      || '<li><span></span><span class="mute">Nada con ese filtro.</span><span></span></li>';
+}
+async function tamper() {
+  $('#tamperout').innerHTML = '';
+  try {
+    const j = await post('/api/tamper-demo', {});
+    $('#tamperout').innerHTML = `<div class="tamper"><b>Falsificación simulada</b> <span class="mute">(sobre una copia; el registro verdadero no se toca)</span><br>
+      Línea ${j.seq} · antes: <del>${esc(j.before)}</del><br>Después de editarla: <ins>${esc(j.after)}</ins><br>
+      <b class="no">Verificación: ${esc(j.chain.problem)} — la cadena se rompe en la línea ${j.chain.bad_at}.</b></div>`;
+  } catch (e) { $('#tamperout').innerHTML = `<span class="no">${esc(e.message)}</span>`; }
 }
 
 function countUp() {
@@ -310,6 +367,9 @@ document.addEventListener('click', async e => {
   if (t.id === 'sim') return simulate();
   if (t.id === 'attack') return attack();
   if (t.id === 'audit') return audit();
+  if (t.id === 'tamper') return tamper();
+  if (t.id === 'print') return window.print();
+  if (t.dataset.f) { logFilter = t.dataset.f; return renderLog(); }
   if (t.id === 'addben') { S.rules = collectRules(); S.rules.allowed_beneficiaries.push({name:'', currency:'USD', agreed_amount:1, rails:[]}); return render(); }
   if (t.dataset.del) { S.rules = collectRules(); S.rules.allowed_beneficiaries.splice(+t.dataset.del, 1); return render(); }
   if (t.dataset.act) return call('/api/review', {file:t.dataset.f, action:t.dataset.act});
