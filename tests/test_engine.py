@@ -63,9 +63,26 @@ class Batch(unittest.TestCase):
                 self.assertTrue(all(c["ok"] for c in r["checks"]), r["file"])
 
     def test_unreadable_photos_escalate(self):
+        # Sin OCR ni IA una foto no se puede leer: tiene que ir a una persona, nunca pagarse.
+        os.environ["BLINKA_NO_OCR"] = "1"
+        try:
+            batch = runner.run_batch(runner.load_rules(), extractor=rules_only,
+                                     ledger_path=os.path.join(__import__("tempfile").mkdtemp(), "l.jsonl"))
+        finally:
+            del os.environ["BLINKA_NO_OCR"]
+        pngs = [r for r in batch["results"] if r["file"].endswith(".png")]
+        self.assertTrue(pngs)
+        for r in pngs:
+            self.assertEqual(r["decision"], ESCALATE)
+
+    def test_ocr_local_reads_photos_when_available(self):
+        from blinka.extract import _tesseract
+        if not _tesseract():
+            self.skipTest("Tesseract no está instalado")
         for r in self.batch["results"]:
             if r["file"].endswith(".png"):
-                self.assertEqual(r["decision"], ESCALATE)
+                self.assertIn("ocr", r["reader"]["readers"])
+                self.assertIsNotNone(r["extracted"]["amount"])
 
     def test_pdfs_are_read_without_extra_libraries(self):
         pdfs = [r for r in self.batch["results"] if r["file"].endswith(".pdf")]

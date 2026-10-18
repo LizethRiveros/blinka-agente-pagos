@@ -73,5 +73,5 @@ Todo ficticio (empresa, proveedores, RUC). `scripts/gen_invoices.py` regenera la
 - Tipos de cambio fijos en `data/rules.json` (simulados).
 - Duplicados: por número de factura normalizado; sin número, por beneficiario+monto+moneda+vencimiento.
 - Un duplicado con número *distinto* y mismos datos pasa: se asume cobro legítimo (p. ej. un cobro fijo mensual).
-- El lector sin Claude no entiende texto libre ni fotos; las escala.
+- Las fotos se leen con OCR local (Tesseract, gratis, si está instalado; si no, se escalan). El texto libre sin etiquetas solo lo entiende una IA; sin ella se escala.
 - Cumplimiento, fraude y verificación de identidad quedan fuera, como pide el reto.

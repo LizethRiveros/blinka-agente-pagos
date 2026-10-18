@@ -78,7 +78,7 @@ def summarize(batch, rules):
     rs, exp = batch["results"], load_expected()
     has_claude = any("claude" in r["reader"]["readers"] for r in rs)
     # Lo que solo Claude puede leer (fotos, escaneos, texto sin formato) no se evalúa si Claude no leyó.
-    scored = [r for r in rs if r["file"] in exp and (has_claude or not exp[r["file"]].get("needs_claude"))]
+    scored = [r for r in rs if r["file"] in exp and (not exp[r["file"]].get("needs_claude") or {"claude", "ocr"} & set(r["reader"]["readers"]))]
     unscored = sum(r["file"] in exp for r in rs) - len(scored)
     ok = [r for r in scored if r["decision"] == exp[r["file"]]["expected"]]
     unsafe = [r for r in rs if r["file"] in exp and r["decision"] == PAY and exp[r["file"]]["expected"] != PAY]

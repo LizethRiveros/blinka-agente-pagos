@@ -13,6 +13,9 @@ import base64
 import json
 import os
 import re
+import shutil
+import subprocess
+import tempfile
 import urllib.request
 import zlib
 from datetime import date
@@ -161,6 +164,31 @@ def extract_regex(text):
     return data, (["amount"] if len(distinct) > 1 else [])
 
 
+# ------------------------------------------------------------------------ OCR
+
+def _tesseract():
+    for c in (os.environ.get("TESSERACT_CMD"), shutil.which("tesseract"), r"C:\Program Files\Tesseract-OCR\tesseract.exe"):
+        if c and os.path.exists(c):
+            return c
+    return None
+
+
+def ocr_text(doc):
+    """Texto de una foto con Tesseract local (gratis, sin enviar nada a internet). '' si no hay OCR o no lee."""
+    exe = None if os.environ.get("BLINKA_NO_OCR") else _tesseract()
+    if not exe or doc["kind"] != "image":
+        return ""
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, "doc" + (".png" if doc["media"] == "image/png" else ".jpg"))
+        with open(p, "wb") as f:
+            f.write(doc["bytes"])
+        try:
+            r = subprocess.run([exe, p, "-", "-l", "eng", "--psm", "6"], capture_output=True, timeout=60)
+        except (OSError, subprocess.SubprocessError):
+            return ""
+    return r.stdout.decode("utf-8", "replace") if r.returncode == 0 else ""
+
+
 # --------------------------------------------------------------------- Claude
 
 _SYSTEM = (
@@ -244,6 +272,9 @@ def extract_document(doc, use_llm=True):
     if doc["text"].strip():
         rx, meta["ambiguous"] = extract_regex(doc["text"])
         meta["readers"].append("reglas")
+    elif (text := ocr_text(doc)).strip():  # foto: OCR local y luego el mismo lector por reglas
+        rx, meta["ambiguous"] = extract_regex(text)
+        meta["readers"].append("ocr")
     claude_key, gemini_key = os.environ.get("ANTHROPIC_API_KEY"), os.environ.get("GEMINI_API_KEY")
     if use_llm and (claude_key or gemini_key) and not os.environ.get("BLINKA_NO_LLM"):
         name, fn, key = ("claude", extract_llm, claude_key) if claude_key else ("gemini", extract_gemini, gemini_key)

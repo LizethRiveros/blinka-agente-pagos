@@ -45,7 +45,7 @@ def run(label, use_llm):
         e = exp.get(r["file"])
         if not e:
             continue
-        if use_llm is False and e.get("needs_claude"):
+        if e.get("needs_claude") and not ({"claude", "ocr", "gemini"} & set(r["reader"]["readers"])):
             continue
         n += 1
         for f in FIELDS:
