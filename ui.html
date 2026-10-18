@@ -1,73 +1,148 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agente de pagos</title>
+<title>Blinka · Agente de pagos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#f6f7f9; --card:#fff; --ink:#1b2430; --mute:#667085; --line:#e4e7ec;
-          --pay:#067647; --paybg:#ecfdf3; --esc:#b54708; --escbg:#fffaeb; --blk:#b42318; --blkbg:#fef3f2; --acc:#3538cd; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#12151b; --card:#1b2029; --ink:#e8ebf0; --mute:#98a2b3; --line:#2c3340;
-          --pay:#47cd89; --paybg:#0f2a1d; --esc:#fdb022; --escbg:#2e2208; --blk:#f97066; --blkbg:#331512; --acc:#9ea5ff; } }
-  * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui,sans-serif; }
-  main { max-width:1100px; margin:0 auto; padding:24px 16px 64px; }
-  h1 { font-size:22px; margin:0 0 2px; } h2 { font-size:16px; margin:0 0 12px; } .mute { color:var(--mute); font-size:13px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-top:16px; }
-  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:16px; }
-  .kpi { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
-  .kpi b { display:block; font-size:24px; } .kpi.bad b { color:var(--blk); } .kpi.good b { color:var(--pay); }
-  button { font:inherit; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:8px; padding:7px 12px; cursor:pointer; }
-  button.primary { background:var(--acc); color:#fff; border-color:var(--acc); } button:disabled { opacity:.5; cursor:default; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; }
-  label { display:block; font-size:13px; color:var(--mute); } input { width:100%; font:inherit; padding:6px 8px; margin-top:3px;
-          border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); }
-  table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
-  th { font-size:12px; color:var(--mute); font-weight:600; } td.n { text-align:right; white-space:nowrap; }
-  .tag { display:inline-block; padding:2px 9px; border-radius:99px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .PAY { background:var(--paybg); color:var(--pay); } .ESCALATE { background:var(--escbg); color:var(--esc); } .BLOCK { background:var(--blkbg); color:var(--blk); }
-  tr.row { cursor:pointer; } tr.row:hover { background:var(--bg); }
-  .detail { background:var(--bg); } .detail ul { margin:6px 0; padding-left:0; list-style:none; } .detail li { margin:3px 0; }
-  .ok { color:var(--pay); } .no { color:var(--blk); } pre { white-space:pre-wrap; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px; font-size:12px; }
-  .err { color:var(--blk); margin-top:8px; } .scroll { overflow-x:auto; }
-  .whatif { margin:10px 0; padding:10px 12px; border:1px dashed var(--line); border-radius:8px; } .whatif ul { margin:6px 0 2px; padding-left:18px; list-style:disc; }
-  .out { margin-top:10px; } .out ul { margin:6px 0; padding-left:18px; }
+  /* Tokens tomados de tinte.dev (tokens.css, Railly/tinte): neutros OKLCH, radio chico, borde de 1px. */
+  :root, :root[data-theme="light"] {
+    --background: oklch(1 0 0); --foreground: oklch(0.1448 0 0);
+    --card: oklch(0.9851 0 0); --muted-foreground: oklch(0.5103 0 0);
+    --border: oklch(0.9401 0 0); --input: oklch(0.9401 0 0);
+    --primary: oklch(0.1448 0 0); --primary-foreground: oklch(1 0 0);
+    --hover: oklch(0.9701 0 0);
+    --pay: oklch(0.55 0.15 150); --esc: oklch(0.62 0.15 70); --blk: oklch(0.5134 0.1907 16.3201);
+    --radius: 0.25rem; --ring: 0 0 0 1px var(--border);
+  }
+  :root[data-theme="dark"] {
+    --background: oklch(0 0 0); --foreground: oklch(0.9461 0 0);
+    --card: oklch(0.1448 0 0); --muted-foreground: oklch(0.709 0 0);
+    --border: oklch(0.2393 0 0); --input: oklch(0.2393 0 0);
+    --primary: oklch(0.9461 0 0); --primary-foreground: oklch(0 0 0);
+    --hover: oklch(0.19 0 0);
+    --pay: oklch(0.78 0.17 150); --esc: oklch(0.82 0.15 80); --blk: oklch(0.6881 0.18 1.5187);
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--background); color:var(--foreground);
+         font:14px/1.5 "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing:antialiased; }
+  code, .mono, .kpi b, th, .seal { font-family:"Geist Mono", ui-monospace, SFMono-Regular, Consolas, monospace; }
+  main { max-width:1120px; margin:0 auto; padding:0 20px 96px; }
+
+  .top { display:flex; align-items:center; justify-content:space-between; padding:18px 0; border-bottom:1px solid var(--border); }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:600; letter-spacing:-.01em; }
+  .logo { width:18px; height:18px; background:var(--foreground); clip-path:polygon(50% 0,100% 100%,0 100%); }
+  .mute { color:var(--muted-foreground); font-size:13px; }
+  .theme { padding:5px 10px; font-size:12px; }
+
+  .hero { padding:56px 0 28px; }
+  .hero h1 { font-size:clamp(30px,5vw,52px); line-height:1.04; letter-spacing:-.035em; font-weight:600; margin:0; max-width:760px; }
+  .hero h1 span { color:var(--muted-foreground); }
+  .hero p { max-width:620px; margin:18px 0 0; color:var(--muted-foreground); font-size:15px; }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:24px; }
+
+  .card { background:var(--card); border-radius:var(--radius); box-shadow:var(--ring); padding:20px; margin-top:16px; }
+  .card h2 { font-size:13px; margin:0 0 4px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; color:var(--muted-foreground); }
+  .card .lead { font-size:20px; letter-spacing:-.02em; font-weight:600; margin:0 0 6px; }
+
+  .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border);
+          border-radius:var(--radius); box-shadow:var(--ring); overflow:hidden; margin-top:8px; }
+  .kpi { background:var(--card); padding:16px 18px; }
+  .kpi .mute { font-size:12px; display:block; min-height:34px; }
+  .kpi b { display:block; font-size:28px; font-weight:500; letter-spacing:-.04em; margin-top:6px; font-variant-numeric:tabular-nums; }
+  .kpi b { white-space:nowrap; } @media (max-width:760px) { .kpis { grid-template-columns:repeat(2,1fr); } }
+  .kpi.bad b { color:var(--blk); } .kpi.good b { color:var(--pay); }
+  .kpi small { font-size:13px; color:var(--muted-foreground); font-weight:400; letter-spacing:0; }
+
+  button { font:inherit; font-size:13px; font-weight:500; border:0; background:transparent; color:var(--foreground); border-radius:var(--radius);
+           padding:8px 14px; cursor:pointer; box-shadow:0 0 0 1px var(--input); transition:background .15s, transform .1s, box-shadow .15s; }
+  button:hover { background:var(--hover); } button:active { transform:scale(.97); }
+  button:focus-visible, input:focus-visible { outline:2px solid var(--foreground); outline-offset:2px; }
+  button.primary { background:var(--primary); color:var(--primary-foreground); box-shadow:none; }
+  button.primary:hover { opacity:.88; background:var(--primary); } button:disabled { opacity:.5; cursor:default; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-top:12px; }
+  label { display:block; font-size:12px; color:var(--muted-foreground); }
+  input { width:100%; font:inherit; font-family:"Geist Mono", ui-monospace, monospace; font-size:13px; padding:8px 10px; margin-top:5px;
+          border:0; box-shadow:0 0 0 1px var(--input); border-radius:var(--radius); background:var(--background); color:var(--foreground); }
+  input:focus { box-shadow:0 0 0 1px var(--foreground); outline:none; }
+
+  table { width:100%; border-collapse:collapse; margin-top:10px; }
+  th, td { text-align:left; padding:11px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th { font-size:11px; color:var(--muted-foreground); font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
+  td.n { text-align:right; white-space:nowrap; font-family:"Geist Mono", ui-monospace, monospace; font-size:13px; font-variant-numeric:tabular-nums; }
+  th.n { text-align:right; }
+  tr.row { cursor:pointer; transition:background .12s; } tr.row:hover { background:var(--hover); }
+  .detail td { background:var(--background); padding:18px 14px; }
+  .detail ul { margin:6px 0; padding-left:0; list-style:none; } .detail li { margin:4px 0; }
+
+  .tag { display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:500; white-space:nowrap; }
+  .tag::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; box-shadow:0 0 0 3px color-mix(in oklch, currentColor 18%, transparent); }
+  .PAY { color:var(--pay); } .ESCALATE { color:var(--esc); } .BLOCK { color:var(--blk); }
+  .ok { color:var(--pay); } .no { color:var(--blk); }
+  pre { white-space:pre-wrap; background:var(--card); box-shadow:var(--ring); border-radius:var(--radius); padding:12px; font-size:12px; }
+  code { font-size:12px; background:var(--hover); padding:2px 6px; border-radius:3px; }
+  .err { color:var(--blk); margin-top:8px; } .scroll { overflow-x:auto; overflow-y:hidden; }
+  .whatif { margin:12px 0; padding:12px 14px; box-shadow:0 0 0 1px var(--border); border-radius:var(--radius); background:var(--card); }
+  .whatif ul { margin:8px 0 2px; padding-left:18px; list-style:disc; }
+  .out { margin-top:14px; } .out ul { margin:8px 0; padding:0; list-style:none; display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:6px; }
+  .out ul li { padding:6px 10px; box-shadow:0 0 0 1px var(--border); border-radius:var(--radius); font-size:12px; }
+  .out.sim ul { display:block; } .out.sim ul li { box-shadow:none; padding:3px 0; font-size:inherit; }
+  .stat { font-size:15px; line-height:1.6; }
+  .seal { font-size:12px; }
+
+  .fresh tr.row, .fresh .kpi { animation:rise .45s cubic-bezier(.2,.7,.2,1) both; animation-delay:calc(var(--i, 0) * 28ms); }
+  .out > * { animation:rise .4s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body>
 <main>
-  <h1>Agente de pagos</h1>
-  <div class="mute" id="company"></div>
+  <div class="top">
+    <div class="brand"><span class="logo"></span>Blinka <span class="mute" id="company" style="font-weight:400"></span></div>
+    <button class="theme" id="theme">Claro / Oscuro</button>
+  </div>
+
+  <section class="hero">
+    <h1>Un agente que paga facturas. <span>Y puede probar que no paga mal.</span></h1>
+    <p>Lee cada factura, aplica las reglas de la empresa y decide: pagar, frenar o pasar a una persona. Aquí no se mueve dinero real.</p>
+    <div class="actions">
+      <button class="primary" id="run">Procesar facturas</button>
+      <button id="export">Exportar CSV</button>
+    </div>
+    <div class="mute" id="note" style="margin-top:12px"></div>
+    <div class="err" id="err"></div>
+  </section>
+
   <div class="kpis" id="kpis"></div>
 
   <div class="card">
-    <button class="primary" id="run">Procesar facturas</button> <button id="export">Exportar CSV</button>
-    <span class="mute"> El agente lee cada factura, aplica las reglas y decide. Aquí no se mueve dinero real.</span>
-    <div class="mute" id="note"></div>
-    <div class="err" id="err"></div>
-  </div>
-
-  <div class="card">
-    <h2>Pruebas de que no paga mal</h2>
-    <button id="attack">Atacar al agente</button> <button id="audit">Verificar registro</button>
-    <span class="mute"> El atacante lanza miles de facturas hostiles y busca un solo pago indebido. El registro está encadenado: se puede verificar y reproducir cada decisión.</span>
-    <div class="out" id="attackout"></div>
-    <div class="out" id="auditout"></div>
+    <h2>Pruebas</h2>
+    <p class="lead">No te pedimos confiar: atácalo.</p>
+    <div class="mute">El atacante lanza miles de facturas hostiles y busca un solo pago indebido. El registro está encadenado: se puede verificar y reproducir cada decisión.</div>
+    <div class="actions"><button id="attack">Atacar al agente</button> <button id="audit">Verificar registro</button></div>
+    <div class="out stat" id="attackout"></div>
+    <div class="out stat" id="auditout"></div>
   </div>
 
   <div class="card">
     <h2>Decisiones</h2>
     <div class="scroll"><table id="tbl"><thead><tr><th>Factura</th><th>Beneficiario</th><th class="n">Monto</th><th class="n">USD</th><th>Decisión</th><th>Por qué</th></tr></thead><tbody></tbody></table></div>
-    <div class="mute" id="empty">Aún no hay decisiones. Pulsa «Procesar facturas».</div>
+    <div class="mute" id="empty" style="margin-top:12px">Aún no hay decisiones. Pulsa «Procesar facturas».</div>
   </div>
 
   <div class="card">
     <h2>Reglas de la empresa</h2>
     <div class="grid" id="rules"></div>
-    <h2 style="margin-top:18px">Beneficiarios permitidos y lo acordado</h2>
+    <h2 style="margin-top:26px">Beneficiarios permitidos y lo acordado</h2>
     <div class="scroll"><table id="bens"><thead><tr><th>Nombre</th><th>Moneda</th><th>Monto acordado</th><th>Rutas de pago</th><th></th></tr></thead><tbody></tbody></table></div>
-    <p><button id="addben">+ Beneficiario</button> <button id="sim">Simular cambio</button> <button class="primary" id="save">Guardar reglas</button>
-    <span class="mute"> Simular muestra qué decisiones cambiarían sin guardar. Guardar borra las decisiones actuales; hay que volver a procesar.</span></p>
-    <div class="out" id="simout"></div>
+    <div class="actions"><button id="addben">+ Beneficiario</button> <button id="sim">Simular cambio</button> <button class="primary" id="save">Guardar reglas</button></div>
+    <div class="mute" style="margin-top:10px">Simular muestra qué decisiones cambiarían sin guardar. Guardar borra las decisiones actuales; hay que volver a procesar.</div>
+    <div class="out sim" id="simout"></div>
   </div>
 </main>
 <script>
@@ -75,7 +150,9 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const LABEL = {PAY:'Pagar', ESCALATE:'Pendiente de aprobación', BLOCK:'Frenada'};
 const money = n => n == null ? '—' : Number(n).toLocaleString('es-PE', {maximumFractionDigits:2});
-let S = {rules:{}, results:[], summary:null}, open = null, invText = {};
+let S = {rules:{}, results:[], summary:null}, open = null, invText = {}, fresh = false;
+
+try { const t = localStorage.getItem('blinka-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
 
 const RULE_FIELDS = [
   ['max_per_payment_usd','Límite duro por pago (USD)'], ['approval_threshold_usd','Aprobación humana desde (USD)'],
@@ -87,7 +164,7 @@ async function call(path, body) {
   const r = await fetch(path, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
   const j = await r.json();
   if (!r.ok) { $('#err').textContent = j.error || 'Error'; return; }
-  S = j; render();
+  S = j; fresh = path === '/api/run'; render(); fresh = false;
 }
 
 function readers(x) {
@@ -97,8 +174,8 @@ function readers(x) {
 
 function preview(f) {
   const url = '/api/invoice/' + encodeURIComponent(f);
-  if (/\.(png|jpe?g)$/i.test(f)) return `<img src="${url}" alt="Factura ${esc(f)}" style="max-width:100%;border:1px solid var(--line);border-radius:8px">`;
-  if (/\.pdf$/i.test(f)) return `<iframe src="${url}" title="Factura ${esc(f)}" style="width:100%;height:340px;border:1px solid var(--line);border-radius:8px"></iframe>`;
+  if (/\.(png|jpe?g)$/i.test(f)) return `<img src="${url}" alt="Factura ${esc(f)}" style="max-width:100%;box-shadow:var(--ring);border-radius:var(--radius)">`;
+  if (/\.pdf$/i.test(f)) return `<iframe src="${url}" title="Factura ${esc(f)}" style="width:100%;height:340px;border:0;box-shadow:var(--ring);border-radius:var(--radius)"></iframe>`;
   return `<pre>${esc(invText[f] || 'cargando…')}</pre>`;
 }
 
@@ -137,7 +214,7 @@ async function attack() {
 async function audit() {
   const j = await (await fetch('/api/audit')).json(), c = j.chain, r = j.replay;
   $('#auditout').innerHTML = !c.ok ? `<span class="no"><b>Cadena rota</b> en la entrada ${c.bad_at}: ${esc(c.problem)}</span>`
-    : `<span class="ok"><b>Cadena íntegra</b></span>: ${c.entries} entradas. Sello final <code>${esc(c.head.slice(0, 16))}…</code><br>
+    : `<span class="ok"><b>Cadena íntegra</b></span>: ${c.entries} entradas. Sello final <code class="seal">${esc(c.head.slice(0, 16))}…</code><br>
        ${r.replayed} decisiones reproducidas desde lo registrado: <b class="${r.mismatches.length ? 'no' : 'ok'}">${r.mismatches.length} discrepancias</b>.
        ${r.warnings.map(w => `<br><span class="mute">Aviso: ${esc(w)}</span>`).join('')}`;
 }
@@ -153,34 +230,52 @@ async function simulate() {
   } catch (e) { $('#simout').innerHTML = `<span class="no">${esc(e.message)}</span>`; }
 }
 
+function countUp() {
+  document.querySelectorAll('.kpi b[data-count]').forEach(el => {
+    const end = +el.dataset.count, t0 = performance.now(), suffix = el.dataset.suffix || '';
+    const tick = t => { const p = Math.min(1, (t - t0) / 700), v = Math.round(end * (1 - Math.pow(1 - p, 3)));
+      el.firstChild.nodeValue = v + suffix; if (p < 1) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
+}
+
 function render() {
   const r = S.rules, m = S.summary;
-  $('#company').textContent = `${r.company || ''} · ${r.period || ''}`;
-  $('#kpis').innerHTML = !m ? '' : [
-    ['Pagadas', m.pay, ''], ['Frenadas', m.block, ''], ['Pendientes de persona', m.pending, ''],
-    ['Gastado del periodo', `USD ${money(m.spent_usd)} / ${money(m.budget_usd)}`, ''],
-    ['Decisiones acertadas', m.accuracy == null ? '—' : Math.round(m.accuracy*100)+'%', ''],
-    ['Resueltas sin persona (acertadas)', m.autonomy == null ? '—' : Math.round(m.autonomy*100)+'%', ''],
-    ['Pagos fuera de reglas', m.unsafe_payments, m.unsafe_payments ? 'bad' : 'good'],
-    ['Decisiones explicadas', `${m.explained}/${m.total}`, m.explained === m.total ? 'good' : 'bad'] ]
-    .map(([k,v,c]) => `<div class="kpi ${c}"><span class="mute">${k}</span><b>${esc(v)}</b></div>`).join('');
+  $('#company').textContent = r.company ? `· ${r.company} · ${r.period || ''}` : '';
+  const pct = v => v == null ? ['—'] : [Math.round(v*100)+'%', Math.round(v*100), '%'];
+  const kp = !m ? [] : [
+    ['Pagadas', [m.pay, m.pay, '']], ['Frenadas', [m.block, m.block, '']], ['Pendientes de persona', [m.pending, m.pending, '']],
+    ['Gastado del periodo', [`USD ${money(m.spent_usd)}`]],
+    ['Decisiones acertadas', pct(m.accuracy)],
+    ['Resueltas sin persona (acertadas)', pct(m.autonomy)],
+    ['Pagos fuera de reglas', [m.unsafe_payments, m.unsafe_payments, ''], m.unsafe_payments ? 'bad' : 'good'],
+    ['Decisiones explicadas', [`${m.explained}/${m.total}`], m.explained === m.total ? 'good' : 'bad'] ];
+  $('#kpis').innerHTML = kp.map(([k, v, c], i) => {
+    const cnt = v.length === 3 ? ` data-count="${v[1]}" data-suffix="${v[2]}"` : '';
+    const sub = k === 'Gastado del periodo' ? ` <small>/ ${money(m.budget_usd)}</small>` : '';
+    return `<div class="kpi ${c || ''}" style="--i:${i}"><span class="mute">${k}</span><b${cnt}>${esc(v[0])}${sub}</b></div>`;
+  }).join('');
+  $('#kpis').style.display = m ? '' : 'none';
+  document.querySelector('#kpis').classList.toggle('fresh', fresh);
+  if (fresh) countUp();
 
   $('#note').textContent = !m ? '' : m.claude_used ? 'Lectura con dos lectores: reglas + Claude. Solo se paga si coinciden.'
     : `Lectura solo por reglas (sin ANTHROPIC_API_KEY). ${m.not_evaluated} documentos (fotos y texto libre) requieren Claude: se escalan a una persona y no cuentan en el acierto.`;
   $('#empty').style.display = S.results.length ? 'none' : '';
+  $('#tbl').classList.toggle('fresh', fresh);
   $('#tbl tbody').innerHTML = S.results.map((x, i) => {
     const e = x.extracted, h = x.human;
     const status = h ? (h.action === 'approve' ? 'Aprobada por persona' : 'Rechazada por persona') : LABEL[x.decision];
     const cls = h ? (h.action === 'approve' ? 'PAY' : 'BLOCK') : x.decision;
-    let row = `<tr class="row" data-i="${i}"><td>${esc(e.invoice_number || x.file)}</td><td>${esc(e.beneficiary || '—')}</td>
+    let row = `<tr class="row" style="--i:${i}" data-i="${i}"><td class="mono">${esc(e.invoice_number || x.file)}</td><td>${esc(e.beneficiary || '—')}</td>
       <td class="n">${e.amount != null ? esc(e.currency || '') + ' ' + money(e.amount) : '—'}</td><td class="n">${money(x.amount_usd)}</td>
       <td><span class="tag ${cls}">${status}</span></td><td>${esc(x.reason)}</td></tr>`;
     if (open === i) {
       row += `<tr class="detail"><td colspan="6"><ul>${x.checks.map(c => `<li><span class="${c.ok?'ok':'no'}">${c.ok?'✔':'✖'}</span> <b>${esc(c.name)}:</b> ${esc(c.detail)}</li>`).join('')}</ul>
         ${whatIf(x)}
-        <div class="mute">${readers(x)} Sello de la decisión: <code>${esc((x.seal || '').slice(0, 16))}</code>. Documento original:</div>${preview(x.file)}
-        ${x.decision === 'ESCALATE' && !h ? `<button class="primary" data-act="approve" data-f="${esc(x.file)}">Aprobar pago</button>
-        <button data-act="reject" data-f="${esc(x.file)}">Rechazar</button>` : ''}</td></tr>`;
+        <div class="mute">${readers(x)} Sello de la decisión: <code class="seal">${esc((x.seal || '').slice(0, 16))}</code>. Documento original:</div>${preview(x.file)}
+        ${x.decision === 'ESCALATE' && !h ? `<div class="actions"><button class="primary" data-act="approve" data-f="${esc(x.file)}">Aprobar pago</button>
+        <button data-act="reject" data-f="${esc(x.file)}">Rechazar</button></div>` : ''}</td></tr>`;
     }
     return row;
   }).join('');
@@ -207,6 +302,8 @@ function collectRules() {
 
 document.addEventListener('click', async e => {
   const t = e.target;
+  if (t.id === 'theme') { const n = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = n; try { localStorage.setItem('blinka-theme', n); } catch (x) {} return; }
   if (t.id === 'run') return call('/api/run', {});
   if (t.id === 'export') return S.summary ? (location.href = '/api/export.csv') : ($('#err').textContent = 'Primero procesa las facturas.');
   if (t.id === 'save') return call('/api/rules', collectRules());
