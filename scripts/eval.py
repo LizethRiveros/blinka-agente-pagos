@@ -2,6 +2,7 @@
 
   python scripts/eval.py            # solo lector por reglas (siempre disponible)
   python scripts/eval.py --claude   # además, Claude + reglas (necesita ANTHROPIC_API_KEY en el entorno)
+  python scripts/eval.py --gemini   # además, Gemini + reglas (necesita GEMINI_API_KEY de Google AI Studio)
 
 Cada modo corre el lote completo y reporta:
   - decisiones correctas (solo documentos que ese modo puede leer),
@@ -69,3 +70,8 @@ if __name__ == "__main__":
         if not os.environ.get("ANTHROPIC_API_KEY"):
             sys.exit("\nFalta ANTHROPIC_API_KEY en el entorno (no se imprime ni se guarda).")
         run("Claude + reglas (dos lectores)", True)
+    if "--gemini" in sys.argv:
+        if not os.environ.get("GEMINI_API_KEY"):
+            sys.exit("\nFalta GEMINI_API_KEY en el entorno (clave de Google AI Studio; no se imprime ni se guarda).")
+        os.environ.pop("ANTHROPIC_API_KEY", None)  # que el segundo lector sea Gemini, no Claude
+        run("Gemini + reglas (dos lectores)", True)

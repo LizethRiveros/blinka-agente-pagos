@@ -187,7 +187,11 @@ def extract_llm(doc, api_key):
         {"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"})
     with urllib.request.urlopen(req, timeout=60) as r:
         out = json.load(r)
-    raw = json.loads(re.search(r"\{.*\}", out["content"][0]["text"], re.S).group(0))
+    return _normalize(out["content"][0]["text"])
+
+
+def _normalize(text):
+    raw = json.loads(re.search(r"\{.*\}", text, re.S).group(0))
     amount = raw.get("amount")
     return {
         "beneficiary": raw.get("beneficiary") or None,
@@ -197,6 +201,24 @@ def extract_llm(doc, api_key):
         "invoice_number": raw.get("invoice_number") or None,
         "payment_rail": raw.get("payment_rail") or None,
     }
+
+
+def extract_gemini(doc, api_key):
+    """Mismo trabajo que extract_llm, con Gemini (GEMINI_API_KEY de Google AI Studio). Solo lee."""
+    if doc["text"].strip():
+        parts = [{"text": "<documento>\n%s\n</documento>" % doc["text"]}]
+    else:
+        parts = [{"inline_data": {"mime_type": doc["media"], "data": base64.b64encode(doc["bytes"]).decode()}},
+                 {"text": "Extrae los datos de este documento."}]
+    body = {"system_instruction": {"parts": [{"text": _SYSTEM}]}, "contents": [{"role": "user", "parts": parts}],
+            "generationConfig": {"temperature": 0, "responseMimeType": "application/json"}}
+    model = os.environ.get("BLINKA_GEMINI_MODEL", "gemini-2.5-flash")
+    req = urllib.request.Request(
+        "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent" % model, json.dumps(body).encode(),
+        {"x-goog-api-key": api_key, "content-type": "application/json"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        out = json.load(r)
+    return _normalize(out["candidates"][0]["content"]["parts"][0]["text"])
 
 
 # ------------------------------------------------------------------- combinar
@@ -222,13 +244,14 @@ def extract_document(doc, use_llm=True):
     if doc["text"].strip():
         rx, meta["ambiguous"] = extract_regex(doc["text"])
         meta["readers"].append("reglas")
-    key = os.environ.get("ANTHROPIC_API_KEY")
-    if use_llm and key and not os.environ.get("BLINKA_NO_LLM"):
+    claude_key, gemini_key = os.environ.get("ANTHROPIC_API_KEY"), os.environ.get("GEMINI_API_KEY")
+    if use_llm and (claude_key or gemini_key) and not os.environ.get("BLINKA_NO_LLM"):
+        name, fn, key = ("claude", extract_llm, claude_key) if claude_key else ("gemini", extract_gemini, gemini_key)
         try:
-            llm = extract_llm(doc, key)
-            meta["readers"].append("claude")
+            llm = fn(doc, key)
+            meta["readers"].append(name)
         except Exception as e:
-            meta["error"] = "Claude no pudo leer (%s)" % type(e).__name__
+            meta["error"] = "%s no pudo leer (%s)" % (name.capitalize(), type(e).__name__)
     if rx and llm:
         for k in rx:
             if rx[k] is not None and llm[k] is not None and not _same(k, rx[k], llm[k]):

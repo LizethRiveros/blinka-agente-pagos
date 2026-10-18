@@ -21,6 +21,7 @@ python scripts/eval.py                  # mide al agente contra la verdad conoci
 python scripts/redteam.py               # atacante: 5000 facturas hostiles, busca UN pago indebido
 python scripts/replay.py                # verifica la cadena del registro y reproduce cada decisión
 python scripts/eval.py --claude         # además, con Claude (necesita ANTHROPIC_API_KEY en el entorno)
+python scripts/eval.py --gemini         # alternativa: con Gemini (GEMINI_API_KEY de Google AI Studio, no la suscripción de la app)
 ```
 
 Solo Python estándar (3.10+), sin instalar nada. Pillow se usa únicamente para *generar* las fotos de prueba, que ya vienen incluidas. `PyMuPDF` es opcional para leer PDFs más complejos.
@@ -46,6 +47,7 @@ Honestidad: el verificador independiente lo escribió el mismo autor que el moto
 
 1. **Leer** (`blinka/extract.py`). Cadena de lectura:
    - Texto o PDF con texto → lector por reglas, sin dependencias (incluye PDFs comprimidos).
+   - Con `GEMINI_API_KEY` (y sin clave de Claude) → Gemini lee también, con el mismo contrato de solo lectura.
    - Con `ANTHROPIC_API_KEY` → Claude lee también, y es el único que lee fotos y escaneos (los recibe directamente, sin OCR local).
    - Si los dos lectores **no coinciden**, o el documento trae **totales contradictorios**, se escala. Si nada se puede leer, se escala. Un `$` suelto no se interpreta como moneda.
    - El documento se trata como dato, nunca como instrucción.
